@@ -1,0 +1,1 @@
+export 'presentation/screens/prediction_page.dart';

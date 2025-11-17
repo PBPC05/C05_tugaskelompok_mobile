@@ -1,0 +1,1 @@
+export 'presentation/screens/news_page.dart';
