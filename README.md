@@ -11,8 +11,8 @@
 
 ---
 
-## 📖 Deskripsi Website
-Aplikasi **PitTalk** merupakan sebuah platform komunitas berbasis web yang berfokus pada Formula 1 (F1). **PitTalk** dirancang untuk menjadi wadah bagi para penggemar F1 agar dapat berdiskusi, mengikuti berita, serta berinteraksi satu sama lain.
+## 📖 Deskripsi Aplikasi
+**PitTalk** merupakan sebuah platform komunitas berbasis web dan aplikasi yang berfokus pada Formula 1 (F1). **PitTalk** dirancang untuk menjadi wadah bagi para penggemar F1 agar dapat berdiskusi, mengikuti berita, serta berinteraksi satu sama lain.
 
 | Kebermanfaatan | Penjelasan |
 |-------------------|------------|
