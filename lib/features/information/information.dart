@@ -1,0 +1,1 @@
+export 'presentation/screens/information_page.dart';
