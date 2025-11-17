@@ -62,13 +62,13 @@ Melanjutkan dari project PitTalk sebelumnya kami mengembangkan aplikasi berbasis
 
 **1. Membuat model dalam bahasa dart untuk data-data yang digunakan dalam aplikasi ini.**
 
-    Kami memanfaatkan Quicktype (https://app.quicktype.io/) untuk mengkonversi data JSON yang dikembalikan oleh server Django yang merubahnya menjadi class model pada bahasa dart di flutter.
+Kami memanfaatkan Quicktype (https://app.quicktype.io/) untuk mengkonversi data JSON yang dikembalikan oleh server Django yang merubahnya menjadi class model pada bahasa dart di flutter.
 
 **2. Membuat django-app baru untuk mengurus logic autentikasi khusus untuk pengguna mobile, yaitu untuk autentikasi login, logout maupun registrasi akun baru.**
 
 **3. Mengatur aplikasi PitTalk untuk melakukan autentikasi dan menerima cookies pada server django.**
 
-    Kami menggunakan bantuan package pbp-django-auth yang telah dibuat oleh tim asdos dan package provider yang menyimpan cookies untuk nantinya dipakai di setiap request yang akan dilakukan dari dalam aplikasi kami. 
+Kami menggunakan bantuan package pbp-django-auth yang telah dibuat oleh tim asdos dan package provider yang menyimpan cookies untuk nantinya dipakai di setiap request yang akan dilakukan dari dalam aplikasi kami. 
 
 **4. Membuat endpoints baru khusus untuk implementasi mobile dalam mengambil, mengubah, maupun menghapus (proses CRUD) dari data yang dimiliki oleh PitTalk di server DJANGO**
 
