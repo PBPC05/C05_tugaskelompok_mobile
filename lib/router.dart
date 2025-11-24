@@ -43,6 +43,16 @@ final router = GoRouter(
     GoRoute(
       path: '/history',
       builder: (_, __) => const HistoryPage(),
+      routes: [
+        GoRoute(
+          path: 'drivers',
+          builder: (_, __) => const HistoryDriverUserPage(),
+        ),
+        GoRoute(
+          path: 'drivers/admin',
+          builder: (_, __) => const HistoryDriverAdminPage(),
+        ),
+      ],
     ),
 
     GoRoute(
@@ -73,6 +83,6 @@ final router = GoRouter(
     GoRoute(
       path: '/user',
       builder: (_, __) => const UserPage(),
-    ), 
+    ),
   ],
 );
