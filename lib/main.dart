@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:pittalk_mobile/features/authentication/presentation/screens/login.dart';
+import 'package:pittalk_mobile/mainpage/mainpage.dart';
 
 void main() {
   runApp(const MyApp());
@@ -22,9 +23,7 @@ class MyApp extends StatelessWidget {
         theme: ThemeData(
           colorScheme: ColorScheme.fromSwatch(
             primarySwatch: Colors.red,
-          ).copyWith(
-            secondary: Colors.redAccent[400],
-          ),
+          ).copyWith(secondary: Colors.redAccent[400]),
           useMaterial3: true,
         ),
         home: const LoginPage(),

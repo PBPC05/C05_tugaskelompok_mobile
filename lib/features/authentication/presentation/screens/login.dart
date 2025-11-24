@@ -1,12 +1,11 @@
-import 'package:go_router/go_router.dart';
+import 'package:pittalk_mobile/mainpage/mainpage.dart';
 import 'package:flutter/material.dart';
 import 'package:pbp_django_auth/pbp_django_auth.dart';
-import 'package:pittalk_mobile/mainpage/mainpage.dart';
 import 'package:provider/provider.dart';
 import 'package:pittalk_mobile/features/authentication/presentation/screens/register.dart';
 
 void main() {
-  runApp(Provider(create: (_) => CookieRequest(), child: const LoginApp()));
+  runApp(const LoginApp());
 }
 
 class LoginApp extends StatelessWidget {
@@ -18,9 +17,8 @@ class LoginApp extends StatelessWidget {
       title: 'Login',
       theme: ThemeData(
         useMaterial3: true,
-        colorScheme: ColorScheme.fromSwatch(
-          primarySwatch: Colors.blue,
-        ).copyWith(secondary: Colors.blueAccent[400]),
+        colorScheme: ColorScheme.fromSwatch(primarySwatch: Colors.blue)
+          .copyWith(secondary: Colors.blueAccent[400]),
       ),
       home: const LoginPage(),
     );
@@ -43,15 +41,17 @@ class _LoginPageState extends State<LoginPage> {
     final request = context.watch<CookieRequest>();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Login')),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
-          child: Card(
-            elevation: 8,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12.0),
-            ),
+        appBar: AppBar(
+            title: const Text('Login'),
+        ),
+        body: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16.0),
+              child: Card(
+                elevation: 8,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12.0),
+                ),
             child: Padding(
               padding: const EdgeInsets.all(20.0),
               child: Column(
@@ -73,10 +73,8 @@ class _LoginPageState extends State<LoginPage> {
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.all(Radius.circular(12.0)),
                       ),
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: 12.0,
-                        vertical: 8.0,
-                      ),
+                      contentPadding:
+                          EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
                     ),
                   ),
                   const SizedBox(height: 12.0),
@@ -88,10 +86,8 @@ class _LoginPageState extends State<LoginPage> {
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.all(Radius.circular(12.0)),
                       ),
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: 12.0,
-                        vertical: 8.0,
-                      ),
+                      contentPadding:
+                          EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
                     ),
                     obscureText: true,
                   ),
@@ -105,10 +101,11 @@ class _LoginPageState extends State<LoginPage> {
                       // TODO: Change the URL and don't forget to add trailing slash (/) at the end of URL!
                       // To connect Android emulator with Django on localhost, use URL http://10.0.2.2/
                       // If you using chrome,  use URL http://localhost:8000
-                      final response = await request.login(
-                        "http://localhost:8000/auth/login/",
-                        {'username': username, 'password': password},
-                      );
+                      final response = await request
+                          .login("http://localhost:8000/auth/flutter_login/", {
+                        'username': username,
+                        'password': password,
+                      });
 
                       if (request.loggedIn) {
                         String message = response['message'];
@@ -116,14 +113,15 @@ class _LoginPageState extends State<LoginPage> {
                         if (context.mounted) {
                           Navigator.pushReplacement(
                             context,
-                            MaterialPageRoute(builder: (context) => MainPage()),
+                            MaterialPageRoute(
+                                builder: (context) => MainPage()),
                           );
                           ScaffoldMessenger.of(context)
                             ..hideCurrentSnackBar()
                             ..showSnackBar(
                               SnackBar(
-                                content: Text("$message Welcome, $uname."),
-                              ),
+                                  content:
+                                      Text("$message Welcome, $uname.")),
                             );
                         }
                       } else {
