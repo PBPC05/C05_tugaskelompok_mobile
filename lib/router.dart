@@ -1,4 +1,8 @@
 import 'package:go_router/go_router.dart';
+import 'package:pittalk_mobile/features/information/presentation/screens/drivers_page.dart';
+import 'package:pittalk_mobile/features/information/presentation/screens/schedule_page.dart';
+import 'package:pittalk_mobile/features/information/presentation/screens/standings_page.dart';
+import 'package:pittalk_mobile/features/information/presentation/screens/teams_page.dart';
 import 'features/forums/forums.dart';
 import 'features/authentication/authentication.dart';
 import 'features/news/news.dart';
@@ -42,8 +46,23 @@ final router = GoRouter(
     ),
 
     GoRoute(
-      path: '/information',
-      builder: (_, __) => const InformationPage(),
+      path: '/information/drivers',
+      builder: (_, __) => const DriversPage(),
+    ),
+
+    GoRoute(
+      path: '/information/teams',
+      builder: (_, __) => const TeamsPage(),
+    ),
+
+    GoRoute(
+      path: '/information/schedule',
+      builder: (_, __) => const SchedulePage(),
+    ),
+
+    GoRoute(
+      path: '/information/standings',
+      builder: (_, __) => const StandingsPage(),
     ),
 
     GoRoute(
