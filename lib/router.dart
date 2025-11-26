@@ -1,5 +1,5 @@
 import 'package:go_router/go_router.dart';
-import 'package:pittalk_mobile/features/information/presentation/screens/drivers_page.dart';
+import 'package:pittalk_mobile/features/information/presentation/screens/drivers_entry_list.dart';
 import 'package:pittalk_mobile/features/information/presentation/screens/schedule_page.dart';
 import 'package:pittalk_mobile/features/information/presentation/screens/standings_page.dart';
 import 'package:pittalk_mobile/features/information/presentation/screens/teams_page.dart';
@@ -57,7 +57,7 @@ final router = GoRouter(
 
     GoRoute(
       path: '/information/drivers',
-      builder: (_, __) => const DriversPage(),
+      builder: (_, __) => const DriversEntryPage(),
     ),
 
     GoRoute(
