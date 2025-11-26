@@ -4,7 +4,7 @@ import 'package:pittalk_mobile/features/news/data/news_model.dart';
 import 'package:pittalk_mobile/features/forums/data/forums_model.dart';
 
 class ApiService {
-  static const baseUrl = "https://your-django-domain.com"; //wait
+  static const baseUrl = "https://ammar-muhammad41-pittalk.pbp.cs.ui.ac.id";
 
   static Future<List<News>> fetchNews() async {
     final resp = await http.get(Uri.parse('$baseUrl/news/json/'));
@@ -15,12 +15,17 @@ class ApiService {
     return [];
   }
 
-  static Future<List<ForumsEntry>> fetchForums() async {
+  static Future<List<Result>> fetchForums() async {
     final resp = await http.get(Uri.parse('$baseUrl/forums/api/json/'));
+  
     if (resp.statusCode == 200) {
-      final List data = jsonDecode(resp.body);
-      return data.map((e) => ForumsEntry.fromJson(e)).toList();
+      final Map<String, dynamic> json = jsonDecode(resp.body);
+  
+      final ForumsEntry entry = ForumsEntry.fromJson(json);
+      return entry.results; 
     }
+  
     return [];
   }
+
 }
