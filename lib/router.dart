@@ -1,4 +1,7 @@
 import 'package:go_router/go_router.dart';
+import 'package:pittalk_mobile/features/authentication/presentation/screens/authentication_page.dart';
+import 'package:pittalk_mobile/features/authentication/presentation/screens/login.dart';
+import 'package:pittalk_mobile/features/authentication/presentation/screens/register.dart';
 import 'features/forums/forums.dart';
 import 'features/authentication/authentication.dart';
 import 'features/news/news.dart';
