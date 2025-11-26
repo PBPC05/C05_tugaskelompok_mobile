@@ -71,7 +71,7 @@ final router = GoRouter(
 
     GoRoute(
       path: '/information/drivers',
-      builder: (_, __) => const DriversPage(),
+      builder: (_, __) => const DriversEntryPage(),
     ),
 
     GoRoute(
@@ -98,5 +98,16 @@ final router = GoRouter(
       path: '/user',
       builder: (_, __) => const UserPage(),
     ),
+
+    GoRoute(
+      path: '/login',
+      builder: (_, __) => const LoginPage(),
+    ),
+
+    GoRoute(
+      path: '/register',
+      builder: (_, __) => const RegisterPage(),
+    ),
+    
   ],
 );

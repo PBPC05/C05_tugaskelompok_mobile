@@ -30,8 +30,9 @@ class _DriverEditModalState extends State<DriverEditModal> {
 
   Future<void> submit() async {
     // Pake localhostnya ntar diganti pakai pws
+    // Localhost: "http://localhost:8000/history/driver/edit/${widget.driver.id}/"
     final url = Uri.parse(
-        "http://localhost:8000/history/driver/edit/${widget.driver.id}/");
+        "https://ammar-muhammad41-pittalk.pbp.cs.ui.ac.id//history/driver/edit/${widget.driver.id}/");
 
     await http.post(url,
         headers: {"Content-Type": "application/json"},

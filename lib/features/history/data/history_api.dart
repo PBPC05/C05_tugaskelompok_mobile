@@ -4,8 +4,9 @@ import 'models/driver_model.dart';
 
 /// API Service untuk Flutter
 class HistoryApi {
-  // --- Pakai localhost ntar dihanti pakai pws aja biar bisa akses Django ---
-  final String baseUrl = "http://localhost:8000/history";
+  // --- Pakai localhost ntar dihanti pakai pws aja biar bisa akses Django --- 
+  // Localhost: "http://localhost:8000/history";
+  final String baseUrl = "https://ammar-muhammad41-pittalk.pbp.cs.ui.ac.id/history";
 
   // ============================================================
   // GET DRIVERS
