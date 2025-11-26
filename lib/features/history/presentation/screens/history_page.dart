@@ -9,9 +9,23 @@ class HistoryPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text("History")),
       body: Center(
-        child: ElevatedButton(
-          onPressed: () => context.go('/'),
-          child: const Text("Back to MainPage"),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ElevatedButton(
+              onPressed: () => context.go('/history/drivers'),
+              child: const Text("Driver History (User)"),
+            ),
+            ElevatedButton(
+              onPressed: () => context.go('/history/drivers/admin'),
+              child: const Text("Driver History (Admin)"),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () => context.go('/'),
+              child: const Text("Back to MainPage"),
+            ),
+          ],
         ),
       ),
     );

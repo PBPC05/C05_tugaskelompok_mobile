@@ -1,10 +1,14 @@
 import 'package:go_router/go_router.dart';
+import 'package:pittalk_mobile/features/authentication/presentation/screens/authentication_page.dart';
 import 'package:pittalk_mobile/features/authentication/presentation/screens/login.dart';
 import 'package:pittalk_mobile/features/authentication/presentation/screens/register.dart';
+import 'package:pittalk_mobile/features/information/presentation/screens/drivers_page.dart';
+import 'package:pittalk_mobile/features/information/presentation/screens/schedule_page.dart';
+import 'package:pittalk_mobile/features/information/presentation/screens/standings_page.dart';
+import 'package:pittalk_mobile/features/information/presentation/screens/teams_page.dart';
 import 'features/forums/forums.dart';
 import 'features/authentication/authentication.dart';
 import 'features/news/news.dart';
-import 'features/admins/admins.dart';
 import 'features/history/history.dart';
 import 'features/information/information.dart';
 import 'features/prediction/prediction.dart';
@@ -34,18 +38,38 @@ final router = GoRouter(
     ),
 
     GoRoute(
-      path: '/admins',
-      builder: (_, __) => const AdminsPage(),
-    ),
-
-    GoRoute(
       path: '/history',
       builder: (_, __) => const HistoryPage(),
+      routes: [
+        GoRoute(
+          path: 'drivers',
+          builder: (_, __) => const HistoryDriverUserPage(),
+        ),
+        GoRoute(
+          path: 'drivers/admin',
+          builder: (_, __) => const HistoryDriverAdminPage(),
+        ),
+      ],
     ),
 
     GoRoute(
-      path: '/information',
-      builder: (_, __) => const InformationPage(),
+      path: '/information/drivers',
+      builder: (_, __) => const DriversPage(),
+    ),
+
+    GoRoute(
+      path: '/information/teams',
+      builder: (_, __) => const TeamsPage(),
+    ),
+
+    GoRoute(
+      path: '/information/schedule',
+      builder: (_, __) => const SchedulePage(),
+    ),
+
+    GoRoute(
+      path: '/information/standings',
+      builder: (_, __) => const StandingsPage(),
     ),
 
     GoRoute(
