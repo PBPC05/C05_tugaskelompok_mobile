@@ -2,10 +2,13 @@ import 'package:go_router/go_router.dart';
 import 'package:pittalk_mobile/features/authentication/presentation/screens/authentication_page.dart';
 import 'package:pittalk_mobile/features/authentication/presentation/screens/login.dart';
 import 'package:pittalk_mobile/features/authentication/presentation/screens/register.dart';
+import 'package:pittalk_mobile/features/information/presentation/screens/drivers_page.dart';
+import 'package:pittalk_mobile/features/information/presentation/screens/schedule_page.dart';
+import 'package:pittalk_mobile/features/information/presentation/screens/standings_page.dart';
+import 'package:pittalk_mobile/features/information/presentation/screens/teams_page.dart';
 import 'features/forums/forums.dart';
 import 'features/authentication/authentication.dart';
 import 'features/news/news.dart';
-import 'features/admins/admins.dart';
 import 'features/history/history.dart';
 import 'features/information/information.dart';
 import 'features/prediction/prediction.dart';
@@ -32,11 +35,6 @@ final router = GoRouter(
     GoRoute(
       path: '/news',
       builder: (_, __) => const NewsPage(),
-    ),
-
-    GoRoute(
-      path: '/admins',
-      builder: (_, __) => const AdminsPage(),
     ),
 
     GoRoute(
