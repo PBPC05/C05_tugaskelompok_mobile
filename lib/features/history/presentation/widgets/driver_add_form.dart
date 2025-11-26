@@ -124,7 +124,11 @@ class _DriverAddFormState extends State<DriverAddForm> {
               onPressed: _saveDriver,
               style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.redAccent),
-              child: const Text("Save"),
+              child: const Text("Save",
+                style: TextStyle(
+                  color: Colors.white,
+                ),
+              ),
             ),
           ],
         ),
