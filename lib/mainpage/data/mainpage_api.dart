@@ -4,7 +4,7 @@ import 'package:pittalk_mobile/features/news/data/news_model.dart';
 import 'package:pittalk_mobile/features/forums/data/forums_model.dart';
 
 class ApiService {
-  static const baseUrl = "https://ammar-muhammad41-pittalk.pbp.cs.ui.ac.id"; //wait
+  static const baseUrl = "https://ammar-muhammad41-pittalk.pbp.cs.ui.ac.id";
 
   static Future<List<News>> fetchNews() async {
     final resp = await http.get(Uri.parse('$baseUrl/news/json/'));

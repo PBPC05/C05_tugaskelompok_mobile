@@ -71,6 +71,10 @@ class _PitTalkSidebarState extends State<PitTalkSidebar>
             ),
     
             _navTile(context, "Predictions", "/prediction", Icons.timeline),
+            _navTile(context, "Admins", "/admins", Icons.admin_panel_settings),
+            _navTile(context, "User", "/user", Icons.person),
+            _navTile(context, "Login", "/auth/login", Icons.login),
+            _navTile(context, "Register", "/auth/register", Icons.app_registration),
           ],
         ),
       ),

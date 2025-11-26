@@ -54,6 +54,6 @@ final router = GoRouter(
     GoRoute(
       path: '/user',
       builder: (_, __) => const UserPage(),
-    ), 
+    ),
   ],
 );

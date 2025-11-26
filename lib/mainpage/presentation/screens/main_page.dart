@@ -20,7 +20,6 @@ class MainPage extends StatelessWidget {
       appBar: isDesktop
           ? null
           : AppBar(
-              title: const Text("PitTalk"),
               backgroundColor: Colors.black,
             ),
 
@@ -130,7 +129,7 @@ class _NewsSection extends StatelessWidget {
           );
         }
 
-        final newsList = snapshot.data!;
+        final newsList = snapshot.data!.where((n) => n.isFeatured).take(5);
         final isDesktop = MediaQuery.of(context).size.width >= 900;
 
         return isDesktop
@@ -140,7 +139,7 @@ class _NewsSection extends StatelessWidget {
                 children: newsList.map((news) {
                   return SizedBox(
                     width: 220,
-                    child: NewsCard(title: news.title),
+                    child: NewsCard(title: news.title, imageUrl: news.thumbnail, date: news.createdAt.toString(), views: news.newsViews),
                   );
                 }).toList(),
               )
@@ -148,7 +147,7 @@ class _NewsSection extends StatelessWidget {
                 children: newsList.map((news) {
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 12),
-                    child: NewsCard(title: news.title),
+                    child: NewsCard(title: news.title, imageUrl: news.thumbnail, date: news.createdAt.toString(), views: news.newsViews),
                   );
                 }).toList(),
               );
@@ -177,7 +176,7 @@ class _ForumsSection extends StatelessWidget {
           );
         }
 
-        final forums = snapshot.data!;
+        final forums = snapshot.data!.take(6);
 
         return Column(
           children: forums.map((f) {
@@ -186,6 +185,12 @@ class _ForumsSection extends StatelessWidget {
               child: ForumsCard(
                 title: f.title,
                 author: f.author,
+                content: f.content,
+                date: f.createdAt.toString(),
+                replies: f.forumsRepliesCounts,
+                onTap: () {
+                  context.go("/forums/${f.id}");
+                },
               ),
             );
           }).toList(),

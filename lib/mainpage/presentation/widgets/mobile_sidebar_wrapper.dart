@@ -35,11 +35,11 @@ class _MobileSidebarWrapperState extends State<MobileSidebarWrapper> {
           bottom: 20,
           left: 20,
           child: AnimatedScale(
-            scale: open ? 0.8 : 1.0,
+            scale: open ? 0.9 : 1.0,
             duration: const Duration(milliseconds: 200),
             child: FloatingActionButton(
               heroTag: "sidebar-fab",
-              backgroundColor: const Color.fromARGB(255, 249, 204, 204),
+              backgroundColor: const Color.fromARGB(255, 255, 148, 148),
               onPressed: () => setState(() => open = !open),
               child: Icon(
                 open ? Icons.close : Icons.menu,
