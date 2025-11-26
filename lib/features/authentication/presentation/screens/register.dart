@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:pittalk_mobile/features/authentication/presentation/screens/login.dart';
 import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:provider/provider.dart';
-import 'package:pittalk_mobile/features/authentication/presentation/screens/login.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -120,7 +120,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       // To connect Android emulator with Django on localhost, use URL http://10.0.2.2/
                       // If you using chrome,  use URL http://localhost:8000       
                       final response = await request.postJson(
-                          "http://localhost:8000/auth/register/",
+                          "http://localhost:8000/auth/flutter_register/",
                           jsonEncode({
                             "username": username,
                             "password1": password1,
