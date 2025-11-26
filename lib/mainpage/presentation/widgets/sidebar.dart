@@ -75,6 +75,7 @@ class _PitTalkSidebarState extends State<PitTalkSidebar>
             _navTile(context, "User", "/user", Icons.person),
             _navTile(context, "Login", "/login", Icons.login),
             _navTile(context, "Register", "/register", Icons.app_registration),
+            _navTile(context, "User Dashboard", "/user_dashboard", Icons.dashboard),
           ],
         ),
       ),
