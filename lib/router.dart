@@ -1,7 +1,9 @@
 import 'package:go_router/go_router.dart';
+import 'package:pittalk_mobile/features/authentication/data/models/user.dart';
 import 'package:pittalk_mobile/features/authentication/presentation/screens/authentication_page.dart';
 import 'package:pittalk_mobile/features/authentication/presentation/screens/login.dart';
 import 'package:pittalk_mobile/features/authentication/presentation/screens/register.dart';
+import 'package:pittalk_mobile/features/authentication/presentation/screens/user_dashboard.dart';
 import 'package:pittalk_mobile/features/information/presentation/screens/drivers_page.dart';
 import 'package:pittalk_mobile/features/information/presentation/screens/schedule_page.dart';
 import 'package:pittalk_mobile/features/information/presentation/screens/standings_page.dart';
@@ -30,6 +32,21 @@ final router = GoRouter(
     GoRoute(
       path: '/authentication',
       builder: (_, __) => const AuthenticationPage(),
+    ),
+
+    GoRoute(
+      path: '/login',
+      builder: (_, __) => const LoginPage(),
+    ),
+
+    GoRoute(
+      path: '/register',
+      builder: (_, __) => const RegisterPage(),
+    ),
+
+    GoRoute(
+      path: '/user_dashboard', 
+      builder: (_, __) => const UserDashboard()
     ),
 
     GoRoute(
