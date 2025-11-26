@@ -81,5 +81,16 @@ final router = GoRouter(
       path: '/user',
       builder: (_, __) => const UserPage(),
     ),
+
+    GoRoute(
+      path: '/login',
+      builder: (_, __) => const LoginPage(),
+    ),
+
+    GoRoute(
+      path: '/register',
+      builder: (_, __) => const RegisterPage(),
+    ),
+    
   ],
 );
