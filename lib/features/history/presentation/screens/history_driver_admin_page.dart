@@ -116,7 +116,7 @@ class _HistoryDriverAdminPageState extends State<HistoryDriverAdminPage> {
                   const SizedBox(height: 20),
 
                   // === Table ===
-                  DriverTable(
+                  Center( child: DriverTable(
                     drivers: displayedDrivers,
                     isAdmin: true,
                     onEdit: (driver) {
@@ -132,7 +132,7 @@ class _HistoryDriverAdminPageState extends State<HistoryDriverAdminPage> {
                       await api.deleteDriver(id);
                       fetchDrivers();
                     },
-                  ),
+                  ) ),
                 ],
               ),
             ),
