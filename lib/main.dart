@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
-import 'app.dart';
+import 'package:pbp_django_auth/pbp_django_auth.dart';
+import 'package:pittalk_mobile/app.dart';
+import 'package:provider/provider.dart';
+import 'package:pittalk_mobile/features/authentication/presentation/screens/login.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(MyApp());
 }
