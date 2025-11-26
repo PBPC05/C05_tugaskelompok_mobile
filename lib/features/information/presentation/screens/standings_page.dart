@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-class InformationPage extends StatelessWidget {
-  const InformationPage({super.key});
+class StandingsPage extends StatelessWidget {
+  const StandingsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Information")),
+      appBar: AppBar(title: const Text("2025 Standings")),
       body: Center(
         child: ElevatedButton(
           onPressed: () => context.go('/'),

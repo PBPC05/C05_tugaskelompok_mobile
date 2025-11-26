@@ -42,11 +42,36 @@ final router = GoRouter(
     GoRoute(
       path: '/history',
       builder: (_, __) => const HistoryPage(),
+      routes: [
+        GoRoute(
+          path: 'drivers',
+          builder: (_, __) => const HistoryDriverUserPage(),
+        ),
+        GoRoute(
+          path: 'drivers/admin',
+          builder: (_, __) => const HistoryDriverAdminPage(),
+        ),
+      ],
     ),
 
     GoRoute(
-      path: '/information',
-      builder: (_, __) => const InformationPage(),
+      path: '/information/drivers',
+      builder: (_, __) => const DriversPage(),
+    ),
+
+    GoRoute(
+      path: '/information/teams',
+      builder: (_, __) => const TeamsPage(),
+    ),
+
+    GoRoute(
+      path: '/information/schedule',
+      builder: (_, __) => const SchedulePage(),
+    ),
+
+    GoRoute(
+      path: '/information/standings',
+      builder: (_, __) => const StandingsPage(),
     ),
 
     GoRoute(
@@ -57,6 +82,6 @@ final router = GoRouter(
     GoRoute(
       path: '/user',
       builder: (_, __) => const UserPage(),
-    ), 
+    ),
   ],
 );
