@@ -76,7 +76,7 @@ class HeroBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(8),
       child: SizedBox(
         height: 220,
         child: Stack(
