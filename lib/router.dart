@@ -71,7 +71,7 @@ final router = GoRouter(
 
     GoRoute(
       path: '/information/drivers',
-      builder: (_, __) => const DriversEntryPage(),
+      builder: (_, __) => const TeamsPage(),
     ),
 
     GoRoute(
