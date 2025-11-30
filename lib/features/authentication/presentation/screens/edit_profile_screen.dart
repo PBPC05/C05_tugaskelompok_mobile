@@ -3,6 +3,7 @@ import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:pittalk_mobile/features/authentication/domain/services/auth_service.dart';
 import 'package:pittalk_mobile/features/authentication/data/models/user.dart';
+import 'package:pittalk_mobile/features/authentication/data/models/country.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -21,31 +22,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   String? _selectedNationality;
   bool _isLoading = true;
   bool _isSaving = false;
+  bool _isLoadingCountries = true;
   User? _user;
-
-  // Sample countries - you can expand this list or fetch from an API
-  final List<Map<String, String>> _countries = [
-    {'code': '', 'name': 'Not Set'},
-    {'code': 'ID', 'name': 'Indonesia'},
-    {'code': 'US', 'name': 'United States'},
-    {'code': 'GB', 'name': 'United Kingdom'},
-    {'code': 'SG', 'name': 'Singapore'},
-    {'code': 'MY', 'name': 'Malaysia'},
-    {'code': 'JP', 'name': 'Japan'},
-    {'code': 'KR', 'name': 'South Korea'},
-    {'code': 'CN', 'name': 'China'},
-    {'code': 'AU', 'name': 'Australia'},
-    {'code': 'NL', 'name': 'Netherlands'},
-    {'code': 'IT', 'name': 'Italy'},
-    {'code': 'ES', 'name': 'Spain'},
-    {'code': 'FR', 'name': 'France'},
-    {'code': 'DE', 'name': 'Germany'},
-  ];
+  List<Country> _countries = [];
 
   @override
   void initState() {
     super.initState();
-    _loadUserProfile();
+    _loadData();
   }
 
   @override
@@ -57,14 +41,24 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     super.dispose();
   }
 
-  Future<void> _loadUserProfile() async {
+  Future<void> _loadData() async {
     final request = context.read<CookieRequest>();
     final authService = AuthService(request);
 
-    final result = await authService.getUserProfile();
+    // Load countries and user profile in parallel
+    final results = await Future.wait([
+      authService.getCountries(),
+      authService.getUserProfile(),
+    ]);
 
-    if (result['status'] == true) {
-      _user = result['user'];
+    setState(() {
+      _countries = results[0] as List<Country>;
+      _isLoadingCountries = false;
+    });
+
+    final profileResult = results[1] as Map<String, dynamic>;
+    if (profileResult['status'] == true) {
+      _user = profileResult['user'];
       _emailController.text = _user!.email ?? '';
       _phoneController.text = _user!.profile?.phoneNumber ?? '';
       _addressController.text = _user!.profile?.address ?? '';
@@ -109,7 +103,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             backgroundColor: Colors.green,
           ),
         );
-        Navigator.pop(context, true); // Return true to indicate profile was updated
+        Navigator.pop(context, true);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -149,7 +143,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     const SizedBox(height: 16),
                     _buildTextField(
                       controller: _emailController,
-                      label: 'Email',
+                      label: 'Email Address',
                       keyboardType: TextInputType.emailAddress,
                       validator: (value) {
                         if (value != null && value.isNotEmpty) {
@@ -185,6 +179,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       maxLines: 4,
                       hint: 'Tell us about yourself...',
                     ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Brief description for your profile',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
                     const SizedBox(height: 32),
                     Row(
                       children: [
@@ -195,9 +197,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               side: const BorderSide(color: Colors.white38),
                             ),
-                            child: const Text(
-                              'Cancel',
-                              style: TextStyle(color: Colors.white70),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(Icons.arrow_back, size: 16, color: Colors.white70),
+                                const SizedBox(width: 8),
+                                const Text(
+                                  'Cancel',
+                                  style: TextStyle(color: Colors.white70),
+                                ),
+                              ],
                             ),
                           ),
                         ),
@@ -218,14 +227,23 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                       valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                     ),
                                   )
-                                : const Text(
-                                    'Save Changes',
-                                    style: TextStyle(color: Colors.white),
+                                : Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: const [
+                                      Icon(Icons.check, size: 16),
+                                      SizedBox(width: 8),
+                                      Text(
+                                        'Save Changes',
+                                        style: TextStyle(color: Colors.white),
+                                      ),
+                                    ],
                                   ),
                           ),
                         ),
                       ],
                     ),
+                    const SizedBox(height: 24),
+                    _buildAccountDetails(),
                   ],
                 ),
               ),
@@ -322,39 +340,173 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           ),
         ),
         const SizedBox(height: 8),
-        DropdownButtonFormField<String>(
-          value: _selectedNationality,
-          dropdownColor: const Color(0xFF1E1E2C),
-          style: const TextStyle(color: Colors.white),
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: const Color(0xFF1E1E2C),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Colors.white12),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Colors.white12),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Color(0xFFE10600), width: 2),
+        _isLoadingCountries
+            ? Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1E1E2C),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.white12),
+                ),
+                child: const Center(
+                  child: SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+              )
+            : DropdownButtonFormField<String>(
+                value: _selectedNationality,
+                dropdownColor: const Color(0xFF1E1E2C),
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: const Color(0xFF1E1E2C),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: Colors.white12),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: Colors.white12),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: Color(0xFFE10600), width: 2),
+                  ),
+                ),
+                isExpanded: true,
+                items: _countries.map((country) {
+                  return DropdownMenuItem<String>(
+                    value: country.code,
+                    child: Text(
+                      country.name,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedNationality = value;
+                  });
+                },
+              ),
+      ],
+    );
+  }
+
+  Widget _buildAccountDetails() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E1E2C),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Account Details',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
             ),
           ),
-          items: _countries.map((country) {
-            return DropdownMenuItem<String>(
-              value: country['code'],
-              child: Text(country['name']!),
-            );
-          }).toList(),
-          onChanged: (value) {
-            setState(() {
-              _selectedNationality = value;
-            });
-          },
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _buildDetailItem(
+                  'Member Since',
+                  _formatDate(_user!.dateJoined),
+                ),
+              ),
+              Expanded(
+                child: _buildDetailItem(
+                  'Last Login',
+                  _user!.lastLogin != null
+                      ? _formatDate(_user!.lastLogin!)
+                      : 'Never',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildDetailItem(
+                  'Profile Updated',
+                  _user!.profile?.updatedAt != null
+                      ? _formatDate(_user!.profile!.updatedAt)
+                      : 'N/A',
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Account Status',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _user!.isActive ? 'Active' : 'Banned',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: _user!.isActive ? Colors.green : Colors.red,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailItem(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            color: Colors.grey,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: Colors.white70,
+          ),
         ),
       ],
     );
+  }
+
+  String _formatDate(DateTime date) {
+    return '${_getMonthName(date.month)} ${date.day}, ${date.year}';
+  }
+
+  String _getMonthName(int month) {
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    return months[month - 1];
   }
 }

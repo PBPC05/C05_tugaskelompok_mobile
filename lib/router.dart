@@ -16,6 +16,7 @@ import 'features/information/information.dart';
 import 'features/prediction/prediction.dart';
 import 'features/user/user.dart';
 import 'mainpage/mainpage.dart';
+import 'features/authentication/presentation/screens/manage_users_screen.dart';
 
 final router = GoRouter(
   routes: [
@@ -47,6 +48,11 @@ final router = GoRouter(
     GoRoute(
       path: '/user_dashboard', 
       builder: (_, __) => const UserDashboard()
+    ),
+
+    GoRoute(
+      path: '/admin',
+      builder: (_, __) => const ManageUsersScreen(),
     ),
 
     GoRoute(
@@ -99,15 +105,5 @@ final router = GoRouter(
       builder: (_, __) => const UserPage(),
     ),
 
-    GoRoute(
-      path: '/login',
-      builder: (_, __) => const LoginPage(),
-    ),
-
-    GoRoute(
-      path: '/register',
-      builder: (_, __) => const RegisterPage(),
-    ),
-    
   ],
 );
