@@ -16,6 +16,7 @@ import 'features/information/information.dart';
 import 'features/prediction/prediction.dart';
 import 'features/user/user.dart';
 import 'mainpage/mainpage.dart';
+import 'features/authentication/presentation/screens/manage_users_screen.dart';
 
 final router = GoRouter(
   routes: [
@@ -50,6 +51,11 @@ final router = GoRouter(
     ),
 
     GoRoute(
+      path: '/admin',
+      builder: (_, __) => const ManageUsersScreen(),
+    ),
+
+    GoRoute(
       path: '/news',
       builder: (_, __) => const NewsPage(),
     ),
@@ -71,7 +77,7 @@ final router = GoRouter(
 
     GoRoute(
       path: '/information/drivers',
-      builder: (_, __) => const DriversPage(),
+      builder: (_, __) => const TeamsPage(),
     ),
 
     GoRoute(
@@ -98,5 +104,6 @@ final router = GoRouter(
       path: '/user',
       builder: (_, __) => const UserPage(),
     ),
+
   ],
 );
