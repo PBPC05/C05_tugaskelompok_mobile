@@ -3,7 +3,9 @@ import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:pittalk_mobile/features/authentication/data/models/user.dart';
+import 'package:pittalk_mobile/features/authentication/data/models/country.dart';
 import 'package:pittalk_mobile/features/authentication/domain/services/admin_service.dart';
+import 'package:pittalk_mobile/features/authentication/domain/services/auth_service.dart';
 
 class EditUserScreen extends StatefulWidget {
   final User user;
@@ -25,24 +27,8 @@ class _EditUserScreenState extends State<EditUserScreen> {
   late bool _isActive;
   String? _selectedNationality;
   bool _isSaving = false;
-
-  final List<Map<String, String>> _countries = [
-    {'code': '', 'name': 'Not Set'},
-    {'code': 'ID', 'name': 'Indonesia'},
-    {'code': 'US', 'name': 'United States'},
-    {'code': 'GB', 'name': 'United Kingdom'},
-    {'code': 'SG', 'name': 'Singapore'},
-    {'code': 'MY', 'name': 'Malaysia'},
-    {'code': 'JP', 'name': 'Japan'},
-    {'code': 'KR', 'name': 'South Korea'},
-    {'code': 'CN', 'name': 'China'},
-    {'code': 'AU', 'name': 'Australia'},
-    {'code': 'NL', 'name': 'Netherlands'},
-    {'code': 'IT', 'name': 'Italy'},
-    {'code': 'ES', 'name': 'Spain'},
-    {'code': 'FR', 'name': 'France'},
-    {'code': 'DE', 'name': 'Germany'},
-  ];
+  bool _isLoadingCountries = true;
+  List<Country> _countries = [];
 
   @override
   void initState() {
@@ -60,6 +46,8 @@ class _EditUserScreenState extends State<EditUserScreen> {
     );
     _isActive = widget.user.isActive;
     _selectedNationality = widget.user.profile?.nationality ?? '';
+    
+    _loadCountries();
   }
 
   @override
@@ -70,6 +58,18 @@ class _EditUserScreenState extends State<EditUserScreen> {
     _addressController.dispose();
     _bioController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadCountries() async {
+    final request = context.read<CookieRequest>();
+    final authService = AuthService(request);
+    
+    final countries = await authService.getCountries();
+    
+    setState(() {
+      _countries = countries;
+      _isLoadingCountries = false;
+    });
   }
 
   Future<void> _saveUser() async {
@@ -196,9 +196,16 @@ class _EditUserScreenState extends State<EditUserScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         side: const BorderSide(color: Colors.white38),
                       ),
-                      child: const Text(
-                        'Cancel',
-                        style: TextStyle(color: Colors.white70),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: const [
+                          Icon(Icons.arrow_back, size: 16, color: Colors.white70),
+                          SizedBox(width: 8),
+                          Text(
+                            'Cancel',
+                            style: TextStyle(color: Colors.white70),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -219,9 +226,16 @@ class _EditUserScreenState extends State<EditUserScreen> {
                                 valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                               ),
                             )
-                          : const Text(
-                              'Save Changes',
-                              style: TextStyle(color: Colors.white),
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: const [
+                                Icon(Icons.check, size: 16),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Save Changes',
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                              ],
                             ),
                     ),
                   ),
@@ -237,9 +251,14 @@ class _EditUserScreenState extends State<EditUserScreen> {
   Widget _buildSectionHeader(String title) {
     return Container(
       padding: const EdgeInsets.only(bottom: 8),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         border: Border(
-          bottom: BorderSide(color: Color(0xFFE10600), width: 2),
+          bottom: BorderSide(
+            color: title == 'System Information' 
+                ? Colors.grey.shade700 
+                : const Color(0xFFE10600),
+            width: 2,
+          ),
         ),
       ),
       child: Text(
@@ -315,38 +334,58 @@ class _EditUserScreenState extends State<EditUserScreen> {
           ),
         ),
         const SizedBox(height: 8),
-        DropdownButtonFormField<String>(
-          value: _selectedNationality,
-          dropdownColor: const Color(0xFF1E1E2C),
-          style: const TextStyle(color: Colors.white),
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: const Color(0xFF1E1E2C),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Colors.white12),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Colors.white12),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Color(0xFFE10600), width: 2),
-            ),
-          ),
-          items: _countries.map((country) {
-            return DropdownMenuItem<String>(
-              value: country['code'],
-              child: Text(country['name']!),
-            );
-          }).toList(),
-          onChanged: (value) {
-            setState(() {
-              _selectedNationality = value;
-            });
-          },
-        ),
+        _isLoadingCountries
+            ? Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1E1E2C),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.white12),
+                ),
+                child: const Center(
+                  child: SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+              )
+            : DropdownButtonFormField<String>(
+                value: _selectedNationality,
+                dropdownColor: const Color(0xFF1E1E2C),
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: const Color(0xFF1E1E2C),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: Colors.white12),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: Colors.white12),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: Color(0xFFE10600), width: 2),
+                  ),
+                ),
+                isExpanded: true,
+                items: _countries.map((country) {
+                  return DropdownMenuItem<String>(
+                    value: country.code,
+                    child: Text(
+                      country.name,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedNationality = value;
+                  });
+                },
+              ),
       ],
     );
   }
@@ -408,34 +447,42 @@ class _EditUserScreenState extends State<EditUserScreen> {
       ),
       child: Column(
         children: [
-          _buildInfoRow('User ID', widget.user.id.toString()),
+          _buildSystemInfoRow('User ID', widget.user.id.toString()),
           const Divider(color: Colors.white12),
-          _buildInfoRow(
+          _buildSystemInfoRow(
             'Date Joined',
             DateFormat('MMMM dd, yyyy HH:mm').format(widget.user.dateJoined),
           ),
           const Divider(color: Colors.white12),
-          _buildInfoRow(
+          _buildSystemInfoRow(
             'Last Login',
             widget.user.lastLogin != null
                 ? DateFormat('MMMM dd, yyyy HH:mm').format(widget.user.lastLogin!)
                 : 'Never',
           ),
           const Divider(color: Colors.white12),
-          _buildInfoRow(
+          _buildSystemInfoRow(
             'Is Superuser',
             widget.user.isSuperuser ? 'Yes (Admin)' : 'No',
           ),
+          if (widget.user.profile != null) ...[
+            const Divider(color: Colors.white12),
+            _buildSystemInfoRow(
+              'Profile Created',
+              DateFormat('MMMM dd, yyyy HH:mm').format(widget.user.profile!.createdAt),
+            ),
+          ],
         ],
       ),
     );
   }
 
-  Widget _buildInfoRow(String label, String value) {
+  Widget _buildSystemInfoRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             label,
@@ -444,12 +491,18 @@ class _EditUserScreenState extends State<EditUserScreen> {
               color: Colors.white54,
             ),
           ),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: label == 'Is Superuser' && value.contains('Admin')
+                    ? Colors.yellow.shade700
+                    : Colors.white,
+              ),
             ),
           ),
         ],

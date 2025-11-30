@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:pittalk_mobile/features/authentication/data/models/user.dart';
+import 'package:pittalk_mobile/features/authentication/data/models/country.dart';
 
 class AuthService {
   final CookieRequest request;
@@ -77,7 +78,7 @@ class AuthService {
 
   Future<Map<String, dynamic>> getUserProfile() async {
     try {
-      final response = await request.get("$baseUrl/auth/profile/");
+      final response = await request.get("$baseUrl/auth/flutter_profile/");
       
       if (response['status'] == true) {
         return {
@@ -100,35 +101,35 @@ class AuthService {
   }
 
   Future<Map<String, dynamic>> updateProfile({
-    String? email,
-    String? phoneNumber,
-    String? address,
-    String? bio,
-    String? nationality,
+  required String email,
+  required String phoneNumber,
+  required String address,
+  required String bio,
+  required String? nationality,
   }) async {
-    try {
-      final response = await request.postJson(
-        "$baseUrl/auth/profile/edit/",
-        jsonEncode({
-          if (email != null) 'email': email,
-          if (phoneNumber != null) 'phone_number': phoneNumber,
-          if (address != null) 'address': address,
-          if (bio != null) 'bio': bio,
-          if (nationality != null) 'nationality': nationality,
-        }),
-      );
+      try {
+        final response = await request.postJson(
+          "$baseUrl/auth/flutter_profile/edit/",
+          jsonEncode({
+            "email": email,
+            "phone_number": phoneNumber,
+            "address": address,
+            "bio": bio,
+            "nationality": nationality ?? "",
+          }),
+        );
 
-      return {
-        'status': response['status'] == true,
-        'message': response['message'] ?? 'Profile updated successfully',
-      };
-    } catch (e) {
-      return {
-        'status': false,
-        'message': 'Connection error: ${e.toString()}',
-      };
+        return {
+          "status": response["status"] == true,
+          "message": response["message"] ?? "Profile updated successfully",
+        };
+      } catch (e) {
+        return {
+          "status": false,
+          "message": "Connection error: ${e.toString()}",
+        };
+      }
     }
-  }
 
   Future<bool> logout() async {
     try {
@@ -142,5 +143,27 @@ class AuthService {
 
   bool isLoggedIn() {
     return request.loggedIn;
+  }
+
+  Future<List<Country>> getCountries() async {
+    try {
+      final response = await request.get("$baseUrl/auth/countries/");
+      
+      if (response['status'] == true) {
+        List<Country> countries = (response['countries'] as List)
+            .map((country) => Country.fromJson(country))
+            .toList();
+        
+        // Add "Not Set" option at the beginning
+        countries.insert(0, Country(code: '', name: 'Not Set'));
+        
+        return countries;
+      } else {
+        return [Country(code: '', name: 'Not Set')];
+      }
+    } catch (e) {
+      print('Error fetching countries: $e');
+      return [Country(code: '', name: 'Not Set')];
+    }
   }
 }

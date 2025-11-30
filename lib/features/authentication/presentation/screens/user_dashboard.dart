@@ -6,6 +6,7 @@ import 'package:pittalk_mobile/features/authentication/domain/services/auth_serv
 import 'package:pittalk_mobile/features/authentication/data/models/user.dart';
 import 'package:pittalk_mobile/features/authentication/presentation/screens/edit_profile_screen.dart';
 import 'package:pittalk_mobile/features/authentication/presentation/screens/login.dart';
+import 'package:go_router/go_router.dart';
 
 class UserDashboard extends StatefulWidget {
   const UserDashboard({super.key});
@@ -55,10 +56,7 @@ class _UserDashboardState extends State<UserDashboard> {
     final success = await authService.logout();
 
     if (success && mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const LoginPage()),
-      );
+      context.go('/login');
     }
   }
 
@@ -79,41 +77,38 @@ class _UserDashboardState extends State<UserDashboard> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _errorMessage != null
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    _errorMessage!,
-                    style: const TextStyle(color: Colors.white),
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        _errorMessage!,
+                        style: const TextStyle(color: Colors.white),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: _loadUserProfile,
+                        child: const Text('Retry'),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: _loadUserProfile,
-                    child: const Text('Retry'),
+                )
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildWelcomeHeader(),
+                      const SizedBox(height: 16),
+                      _buildProfileAndStatsSection(),
+                    ],
                   ),
-                ],
-              ),
-            )
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildProfileHeader(),
-                  const SizedBox(height: 24),
-                  _buildStatsCards(),
-                  const SizedBox(height: 24),
-                  _buildProfileInfo(),
-                  const SizedBox(height: 24),
-                  _buildQuickActions(),
-                ],
-              ),
-            ),
+                ),
     );
   }
 
-  Widget _buildProfileHeader() {
+  Widget _buildWelcomeHeader() {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -123,123 +118,66 @@ class _UserDashboardState extends State<UserDashboard> {
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          CircleAvatar(
-            radius: 40,
-            backgroundColor: Colors.white.withOpacity(0.2),
-            child: Text(
-              _user!.username[0].toUpperCase(),
-              style: const TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _user!.username,
+                  'Welcome, ${_user!.username}!',
                   style: const TextStyle(
-                    fontSize: 24,
+                    fontSize: 28,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
                 ),
-                if (_user!.email != null && _user!.email!.isNotEmpty)
-                  Text(
-                    _user!.email!,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.white.withOpacity(0.8),
-                    ),
-                  ),
                 const SizedBox(height: 4),
                 Text(
-                  'Member since ${DateFormat('MMM dd, yyyy').format(_user!.dateJoined)}',
+                  'Your personal dashboard',
                   style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.white.withOpacity(0.7),
+                    fontSize: 14,
+                    color: Colors.red.shade100,
                   ),
                 ),
               ],
             ),
           ),
+          CircleAvatar(
+            radius: 32,
+            backgroundColor: Colors.white.withOpacity(0.2),
+            child: Text(
+              _user!.username[0].toUpperCase(),
+              style: const TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildStatsCards() {
-    return Row(
-      children: [
-        Expanded(
-          child: _buildStatCard(
-            'Threads',
-            _stats!.threadsCount.toString(),
-            Icons.forum,
-            Colors.blue,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildStatCard(
-            'Votes',
-            _stats!.votesCount.toString(),
-            Icons.how_to_vote,
-            Colors.green,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildStatCard(
-            'Comments',
-            _stats!.commentsCount.toString(),
-            Icons.comment,
-            Colors.purple,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatCard(
-    String label,
-    String value,
-    IconData icon,
-    Color color,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E1E2C),
-        borderRadius: BorderRadius.circular(12),
-        border: Border(left: BorderSide(color: color, width: 4)),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: 32),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.white.withOpacity(0.7),
-            ),
-          ),
-        ],
-      ),
+  Widget _buildProfileAndStatsSection() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // For mobile, stack vertically
+        return Column(
+          children: [
+            _buildProfileInfo(),
+            const SizedBox(height: 16),
+            _buildAccountInfo(),
+            const SizedBox(height: 16),
+            _buildStatsCards(),
+            const SizedBox(height: 16),
+            _buildRecentActivity(),
+            const SizedBox(height: 16),
+            _buildQuickActions(),
+          ],
+        );
+      },
     );
   }
 
@@ -253,10 +191,158 @@ class _UserDashboardState extends State<UserDashboard> {
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
+        children: [
+          // Profile Avatar and Name
+          CircleAvatar(
+            radius: 48,
+            backgroundColor: const Color(0xFFE10600),
+            child: Text(
+              _user!.username[0].toUpperCase(),
+              style: const TextStyle(
+                fontSize: 40,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            _user!.username,
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          Text(
+            _user!.email?.isNotEmpty == true ? _user!.email! : 'No email set',
+            style: const TextStyle(
+              fontSize: 14,
+              color: Colors.grey,
+            ),
+          ),
+          const SizedBox(height: 20),
+          const Divider(color: Colors.grey),
+          const SizedBox(height: 16),
+          // Profile Details
+          if (profile?.phoneNumber != null && profile!.phoneNumber!.isNotEmpty)
+            _buildInfoRowWithIcon(
+              Icons.phone,
+              profile.phoneNumber!,
+            )
+          else
+            _buildInfoRowWithIcon(Icons.phone, 'No phone'),
+          const SizedBox(height: 12),
+          if (profile?.nationality != null && profile!.nationality!.isNotEmpty)
+            _buildInfoRowWithIcon(
+              Icons.flag,
+              profile.nationality!,
+            )
+          else
+            _buildInfoRowWithIcon(Icons.flag, 'Not Set'),
+          const SizedBox(height: 12),
+          if (profile?.address != null && profile!.address!.isNotEmpty)
+            _buildInfoRowWithIcon(
+              Icons.location_on,
+              profile.address!,
+            )
+          else
+            _buildInfoRowWithIcon(Icons.location_on, 'No address set'),
+          const SizedBox(height: 20),
+          const Divider(color: Colors.grey),
+          const SizedBox(height: 16),
+          // Bio Section
+          const Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'About me:',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              profile?.bio?.isNotEmpty == true
+                  ? profile!.bio!
+                  : 'No bio yet...',
+              style: const TextStyle(
+                fontSize: 14,
+                color: Colors.white70,
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          // Edit Profile Button
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const EditProfileScreen()),
+                );
+
+                if (result == true) {
+                  _loadUserProfile();
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFE10600),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text(
+                'Edit Profile',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRowWithIcon(IconData icon, String text) {
+    return Row(
+      children: [
+        Icon(icon, color: Colors.grey, size: 20),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Colors.white70,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAccountInfo() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E1E2C),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Profile Information',
+            'Account Information',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -264,66 +350,173 @@ class _UserDashboardState extends State<UserDashboard> {
             ),
           ),
           const SizedBox(height: 16),
-          if (profile?.phoneNumber != null && profile!.phoneNumber!.isNotEmpty)
-            _buildInfoRow(Icons.phone, 'Phone', profile.phoneNumber!),
-          if (profile?.nationality != null && profile!.nationality!.isNotEmpty)
-            _buildInfoRow(Icons.flag, 'Nationality', profile.nationality!),
-          if (profile?.address != null && profile!.address!.isNotEmpty)
-            _buildInfoRow(Icons.location_on, 'Address', profile.address!),
-          if (profile?.bio != null && profile!.bio!.isNotEmpty) ...[
-            const Divider(color: Colors.grey, height: 32),
-            const Text(
-              'Bio',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Colors.white70,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              profile.bio!,
-              style: const TextStyle(fontSize: 14, color: Colors.white60),
-            ),
-          ],
-          if (profile == null ||
-              (profile.phoneNumber?.isEmpty ?? true) &&
-                  (profile.nationality?.isEmpty ?? true) &&
-                  (profile.address?.isEmpty ?? true) &&
-                  (profile.bio?.isEmpty ?? true))
-            const Center(
-              child: Padding(
-                padding: EdgeInsets.all(16),
-                child: Text(
-                  'No profile information yet. Edit your profile to add details.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white54),
-                ),
-              ),
-            ),
+          _buildAccountRow(
+            'Status:',
+            _user!.isActive ? 'Active' : 'Banned',
+            _user!.isActive ? Colors.green : Colors.red,
+          ),
+          const SizedBox(height: 8),
+          _buildAccountRow(
+            'Member since:',
+            DateFormat('MMM dd, yyyy').format(_user!.dateJoined),
+            Colors.grey.shade300,
+          ),
+          const SizedBox(height: 8),
+          _buildAccountRow(
+            'Last login:',
+            _user!.lastLogin != null
+                ? DateFormat('MMM dd, yyyy').format(_user!.lastLogin!)
+                : 'Never',
+            Colors.grey.shade300,
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+  Widget _buildAccountRow(String label, String value, Color valueColor) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 14,
+            color: Colors.grey,
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: valueColor,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatsCards() {
+    return Column(
+      children: [
+        _buildStatCard(
+          'Threads Created',
+          _stats!.threadsCount.toString(),
+          Icons.forum,
+          Colors.blue,
+        ),
+        const SizedBox(height: 12),
+        _buildStatCard(
+          'Votes Cast',
+          _stats!.votesCount.toString(),
+          Icons.how_to_vote,
+          Colors.green,
+        ),
+        const SizedBox(height: 12),
+        _buildStatCard(
+          'Comments',
+          _stats!.commentsCount.toString(),
+          Icons.comment,
+          Colors.purple,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatCard(
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E1E2C),
+        borderRadius: BorderRadius.circular(12),
+        border: Border(left: BorderSide(color: color, width: 4)),
+      ),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Icon(icon, color: Colors.white54, size: 20),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: const TextStyle(fontSize: 12, color: Colors.white54),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey,
                 ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: color, size: 28),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecentActivity() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E1E2C),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Recent Activity',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Center(
+            child: Column(
+              children: [
+                Icon(
+                  Icons.description,
+                  size: 48,
+                  color: Colors.grey.shade600,
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'No recent activity yet.',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey,
+                  ),
+                ),
+                const SizedBox(height: 8),
                 Text(
-                  value,
-                  style: const TextStyle(fontSize: 14, color: Colors.white),
+                  'Start creating threads and voting to see your activity here!',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade700,
+                  ),
                 ),
               ],
             ),
@@ -334,58 +527,95 @@ class _UserDashboardState extends State<UserDashboard> {
   }
 
   Widget _buildQuickActions() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Quick Actions',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-        const SizedBox(height: 12),
-        _buildActionButton('Edit Profile', Icons.edit, Colors.green, () async {
-          final result = await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const EditProfileScreen()),
-          );
-
-          if (result == true) {
-            _loadUserProfile();
-          }
-        }),
-        const SizedBox(height: 8),
-        _buildActionButton('Logout', Icons.logout, Colors.grey, () async {
-          final confirm = await showDialog<bool>(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text('Logout'),
-              content: const Text('Are you sure you want to logout?'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  child: const Text('Cancel'),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.pop(context, true),
-                  child: const Text('Logout'),
-                ),
-              ],
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E1E2C),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Quick Actions',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
             ),
-          );
+          ),
+          const SizedBox(height: 16),
+          _buildActionButton(
+            'Create Thread',
+            'Start a new discussion',
+            Icons.add,
+            Colors.red,
+            () => context.go('/forums'),
+          ),
+          const SizedBox(height: 12),
+          _buildActionButton(
+            'Browse Threads',
+            'Explore discussions',
+            Icons.search,
+            Colors.blue,
+            () => context.go('/forums'),
+          ),
+          const SizedBox(height: 12),
+          _buildActionButton(
+            'Edit Profile',
+            'Update your information',
+            Icons.edit,
+            Colors.green,
+            () async {
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const EditProfileScreen()),
+              );
 
-          if (confirm == true) {
-            _handleLogout();
-          }
-        }),
-      ],
+              if (result == true) {
+                _loadUserProfile();
+              }
+            },
+          ),
+          const SizedBox(height: 12),
+          _buildActionButton(
+            'Logout',
+            'Sign out of your account',
+            Icons.logout,
+            Colors.grey,
+            () async {
+              final confirm = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Logout'),
+                  content: const Text('Are you sure you want to logout?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('Cancel'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      child: const Text('Logout'),
+                    ),
+                  ],
+                ),
+              );
+
+              if (confirm == true) {
+                _handleLogout();
+              }
+            },
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildActionButton(
-    String label,
+    String title,
+    String subtitle,
     IconData icon,
     Color color,
     VoidCallback onTap,
@@ -395,14 +625,13 @@ class _UserDashboardState extends State<UserDashboard> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color(0xFF1E1E2C),
+          border: Border.all(color: Colors.grey.shade800, width: 2),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white12),
         ),
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: color.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(8),
@@ -410,19 +639,27 @@ class _UserDashboardState extends State<UserDashboard> {
               child: Icon(icon, color: color, size: 20),
             ),
             const SizedBox(width: 16),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Colors.white,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ],
               ),
-            ),
-            const Spacer(),
-            const Icon(
-              Icons.arrow_forward_ios,
-              color: Colors.white38,
-              size: 16,
             ),
           ],
         ),
