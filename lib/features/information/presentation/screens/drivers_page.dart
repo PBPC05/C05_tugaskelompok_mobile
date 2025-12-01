@@ -1,12 +1,13 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pittalk_mobile/features/information/data/drivers_entry.dart';
 import 'package:pittalk_mobile/features/information/presentation/widgets/drivers_entry_card.dart';
-import 'package:pittalk_mobile/mainpage/presentation/widgets/sidebar.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:pittalk_mobile/features/information/presentation/screens/drivers_detail.dart';
+import 'package:pittalk_mobile/mainpage/presentation/widgets/sidebar.dart';
+import 'package:pittalk_mobile/mainpage/presentation/widgets/mobile_sidebar_wrapper.dart';
 
 class DriversEntryPage extends StatefulWidget {
   const DriversEntryPage({super.key});
@@ -28,7 +29,7 @@ class _DriversEntryPageState extends State<DriversEntryPage> {
   }
 
   Future<void> fetchDrivers() async {
-    const url = 'https://ammar-muhammad41-pittalk.pbp.cs.ui.ac.id/information/api/drivers/';
+    const url = 'http://localhost:8000/information/api/drivers/';
     
     try {
       final response = await http.get(Uri.parse(url));
@@ -68,122 +69,155 @@ class _DriversEntryPageState extends State<DriversEntryPage> {
     });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF171717),
-      appBar: AppBar(
-        title: Text(
-          "Drivers", 
-          style: GoogleFonts.inter(fontWeight: FontWeight.bold)
-        ),
-        backgroundColor: const Color(0xFF171717),
-        foregroundColor: Colors.white,
-      ),
-      drawer: PitTalkSidebar(
-        currentRoute: GoRouterState.of(context).uri.toString(),
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: fetchDrivers,
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "2025 Drivers",
-                            style: GoogleFonts.inter(
-                              color: Colors.white,
-                              fontSize: 32,
-                              fontWeight: FontWeight.bold,
-                            ),
+  Widget _buildContent(BuildContext context) {
+    return _isLoading
+        ? const Center(child: CircularProgressIndicator())
+        : RefreshIndicator(
+            onRefresh: fetchDrivers,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "2025 Drivers",
+                          style: GoogleFonts.inter(
+                            color: Colors.white,
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold,
                           ),
-                          const SizedBox(height: 8),
-                          Text(
-                            "Explore every driver’s profile, stats, and story from the 2025 F1 season.",
-                            style: GoogleFonts.inter(
-                              color: Colors.white70,
-                              fontSize: 16,
-                            ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          "Explore every driver’s profile, stats, and story from the 2025 F1 season.",
+                          style: GoogleFonts.inter(
+                            color: Colors.white70,
+                            fontSize: 16,
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                      child: TextField(
-                        onChanged: (value) => _runFilter(value),
-                        style: GoogleFonts.inter(color: Colors.white),
-                        decoration: InputDecoration(
-                          filled: true,
-                          fillColor: const Color(0xFF262626),
-                          hintText: "Search by driver name...",
-                          hintStyle: GoogleFonts.inter(color: Colors.grey[400]),
-                          prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(30),
-                            borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(30),
-                            borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(30),
-                            borderSide: const BorderSide(color: Colors.white),
-                          ),
+                  ),
+
+                  // Search Bar
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    child: TextField(
+                      onChanged: (value) => _runFilter(value),
+                      style: GoogleFonts.inter(color: Colors.white),
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: const Color(0xFF262626),
+                        hintText: "Search by driver name...",
+                        hintStyle: GoogleFonts.inter(color: Colors.grey[400]),
+                        prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(30),
+                          borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(30),
+                          borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(30),
+                          borderSide: const BorderSide(color: Colors.white),
                         ),
                       ),
                     ),
+                  ),
 
-                    const SizedBox(height: 10),
+                  const SizedBox(height: 10),
 
-                    if (_filteredDrivers.isEmpty)
-                      Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(40.0),
-                          child: Text(
-                            "No drivers found",
-                            style: GoogleFonts.inter(color: Colors.grey),
-                          ),
+                  if (_filteredDrivers.isEmpty)
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(40.0),
+                        child: Text(
+                          "No drivers found",
+                          style: GoogleFonts.inter(color: Colors.grey),
                         ),
-                      )
-                    else
-                      ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: _filteredDrivers.length,
-                        itemBuilder: (context, index) {
-                          final driver = _filteredDrivers[index];
-                          
-                          return InkWell(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => DriverDetailPage(driver: driver),
-                                ),
-                              );
-                            },
-                            splashColor: Colors.white.withOpacity(0.1),
-                            highlightColor: Colors.white.withOpacity(0.05),
-                            child: DriverCard(driver: driver),
-                          );
-                        },
                       ),
-                    
-                    const SizedBox(height: 40),
-                  ],
-                ),
+                    )
+                  else
+                    ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: _filteredDrivers.length,
+                      itemBuilder: (context, index) {
+                        final driver = _filteredDrivers[index];
+                        
+                        return InkWell(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => DriverDetailPage(driver: driver),
+                              ),
+                            );
+                          },
+                          splashColor: Colors.white.withOpacity(0.1),
+                          highlightColor: Colors.white.withOpacity(0.05),
+                          child: DriverCard(driver: driver),
+                        );
+                      },
+                    ),
+                  
+                  const SizedBox(height: 40),
+                ],
               ),
             ),
+          );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final currentRoute = GoRouterState.of(context).uri.toString();
+    final isDesktop = MediaQuery.of(context).size.width >= 900;
+
+    final content = Scaffold(
+      backgroundColor: const Color(0xFF171717),
+      
+      appBar: isDesktop
+          ? null
+          : AppBar(
+              title: Text(
+                "Drivers", 
+                style: GoogleFonts.inter(fontWeight: FontWeight.bold)
+              ),
+              backgroundColor: const Color(0xFF171717),
+              foregroundColor: Colors.white,
+            ),
+
+      body: Row(
+        children: [
+          if (isDesktop)
+            PitTalkSidebar(
+              currentRoute: currentRoute,
+            ),
+
+          Expanded(
+            child: Container(
+              color: const Color(0xFF171717),
+              child: _buildContent(context),
+            ),
+          ),
+        ],
+      ),
     );
+
+    if (!isDesktop) {
+      return MobileSidebarWrapper(
+        currentRoute: currentRoute,
+        child: content,
+      );
+    }
+
+    return content;
   }
 }
