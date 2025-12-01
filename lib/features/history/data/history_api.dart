@@ -1,16 +1,22 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'models/driver_model.dart';
 
-/// API Service untuk Flutter
+// Driver & Winner model
+import 'models/driver_model.dart';
+import 'models/winner_model.dart';
+
+/// API Service untuk Flutter (Driver + Winner)
 class HistoryApi {
+  // === Base URL ===
   // --- Pakai localhost ntar dihanti pakai pws aja biar bisa akses Django --- 
   // Localhost: "http://localhost:8000/history";
-  final String baseUrl = "https://ammar-muhammad41-pittalk.pbp.cs.ui.ac.id/history";
+  final String baseUrl = "http://localhost:8000/history";
 
   // ============================================================
-  // GET DRIVERS
+  //                        DRIVER API
   // ============================================================
+
+  // --- GET Drivers ---
   Future<List<Driver>> fetchDrivers() async {
     final res = await http.get(Uri.parse("$baseUrl/api/drivers/"));
 
@@ -24,7 +30,7 @@ class HistoryApi {
     final List<Driver> drivers =
         raw.map((json) => Driver.fromJson(json)).toList();
 
-    // --- Sorting sesuai web (year asc → points desc) ---
+    // Sorting sesuai website
     drivers.sort((a, b) {
       final ay = a.year;
       final by = b.year;
@@ -35,9 +41,7 @@ class HistoryApi {
     return drivers;
   }
 
-  // ============================================================
-  // ADD DRIVER
-  // ============================================================
+  // --- ADD Driver ---
   Future<bool> addDriver(Map<String, dynamic> data) async {
     final res = await http.post(
       Uri.parse("$baseUrl/driver/add/"),
@@ -48,9 +52,7 @@ class HistoryApi {
     return res.statusCode == 200;
   }
 
-  // ============================================================
-  // EDIT DRIVER
-  // ============================================================
+  // --- EDIT Driver ---
   Future<bool> editDriver(int id, Map<String, dynamic> data) async {
     final res = await http.post(
       Uri.parse("$baseUrl/driver/edit/$id/"),
@@ -61,9 +63,7 @@ class HistoryApi {
     return res.statusCode == 200;
   }
 
-  // ============================================================
-  // DELETE DRIVER
-  // ============================================================
+  // --- DELETE Driver ---
   Future<bool> deleteDriver(int id) async {
     final res = await http.delete(
       Uri.parse("$baseUrl/driver/delete/$id/"),
@@ -73,16 +73,65 @@ class HistoryApi {
   }
 
   // ============================================================
-  // IMAGE PROXY (supaya Flutter Web/Android bisa load gambar)
+  //                        IMAGE PROXY
   // ============================================================
   String proxyImage(String? url) {
     if (url == null || url.isEmpty) return "";
     return "$baseUrl/proxy-image/?url=$url";
   }
 
-  // ==== IMAGE PROXY ====
+  // alias
   String proxiedImage(String? url) {
     if (url == null || url.isEmpty) return "";
     return "$baseUrl/proxy-image/?url=$url";
+  }
+
+  // ============================================================
+  //                        WINNER API
+  // ============================================================
+
+  /// GET Winners
+  Future<List<Winner>> fetchWinners() async {
+    final res = await http.get(Uri.parse("$baseUrl/api/winners/"));
+
+    if (res.statusCode != 200) {
+      throw Exception("Gagal mengambil data winner");
+    }
+
+    final List raw = jsonDecode(res.body);
+
+    // Convert ke Winner model
+    return raw.map((json) => Winner.fromJson(json)).toList();
+  }
+
+  /// ADD Winner
+  Future<bool> addWinner(Map<String, dynamic> data) async {
+    final res = await http.post(
+      Uri.parse("$baseUrl/winner/add/"),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode(data),
+    );
+
+    return res.statusCode == 200;
+  }
+
+  /// EDIT Winner
+  Future<bool> editWinner(int id, Map<String, dynamic> data) async {
+    final res = await http.post(
+      Uri.parse("$baseUrl/winner/edit/$id/"),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode(data),
+    );
+
+    return res.statusCode == 200;
+  }
+
+  /// DELETE Winner
+  Future<bool> deleteWinner(int id) async {
+    final res = await http.delete(
+      Uri.parse("$baseUrl/winner/delete/$id/"),
+    );
+
+    return res.statusCode == 200;
   }
 }

@@ -7,6 +7,9 @@ import '../widgets/driver_table.dart';
 import '../widgets/driver_edit_modal.dart';
 import '../widgets/driver_add_form.dart';
 
+import 'package:pittalk_mobile/mainpage/presentation/widgets/sidebar.dart';
+import 'package:go_router/go_router.dart';
+
 class HistoryDriverAdminPage extends StatefulWidget {
   const HistoryDriverAdminPage({super.key});
 
@@ -29,9 +32,7 @@ class _HistoryDriverAdminPageState extends State<HistoryDriverAdminPage> {
     fetchDrivers();
   }
 
-  // ============================================================
   // FETCH DRIVERS
-  // ============================================================
   Future<void> fetchDrivers() async {
     setState(() => isLoading = true);
 
@@ -55,16 +56,14 @@ class _HistoryDriverAdminPageState extends State<HistoryDriverAdminPage> {
     }
   }
 
-  // Reset filter
+  // Reset filter nyaa
   void resetFilter() {
     setState(() {
       displayedDrivers = List.from(allDrivers);
     });
   }
 
-  // ============================================================
-  // Build UI
-  // ============================================================
+  // Build UI nya
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -73,6 +72,10 @@ class _HistoryDriverAdminPageState extends State<HistoryDriverAdminPage> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         title: const Text("Driver Admin", style: TextStyle(color: Colors.white)),
+      ),
+
+      drawer: PitTalkSidebar(
+        currentRoute: GoRouterState.of(context).uri.toString(),
       ),
 
       body: isLoading
@@ -139,9 +142,7 @@ class _HistoryDriverAdminPageState extends State<HistoryDriverAdminPage> {
     );
   }
 
-  // ============================================================
   // NEWEST DRIVER CARD
-  // ============================================================
   Widget _buildNewestDriverCard() {
     final d = newestDriver!;
     return Container(

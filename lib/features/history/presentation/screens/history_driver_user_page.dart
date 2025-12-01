@@ -6,6 +6,9 @@ import '../widgets/driver_filter.dart';
 import '../widgets/driver_table.dart';
 import '../widgets/driver_carousel.dart';
 
+import 'package:pittalk_mobile/mainpage/presentation/widgets/sidebar.dart';
+import 'package:go_router/go_router.dart';
+
 class HistoryDriverUserPage extends StatefulWidget {
   const HistoryDriverUserPage({super.key});
 
@@ -68,6 +71,10 @@ class _HistoryDriverUserPageState extends State<HistoryDriverUserPage> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         title: const Text("Driver History", style: TextStyle(color: Colors.white)),
+      ),
+
+      drawer: PitTalkSidebar(
+        currentRoute: GoRouterState.of(context).uri.toString(),
       ),
 
       body: isLoading
