@@ -3,33 +3,33 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
-import 'package:pittalk_mobile/features/information/data/teams_entry.dart';
-import 'package:pittalk_mobile/features/information/presentation/widgets/team_card.dart';
+import 'package:pittalk_mobile/features/information/data/drivers_entry.dart';
+import 'package:pittalk_mobile/features/information/presentation/widgets/drivers_entry_card.dart';
+import 'package:pittalk_mobile/features/information/presentation/screens/drivers_detail.dart';
 import 'package:pittalk_mobile/mainpage/presentation/widgets/sidebar.dart';
 import 'package:pittalk_mobile/mainpage/presentation/widgets/mobile_sidebar_wrapper.dart';
-import 'package:pittalk_mobile/features/information/presentation/screens/teams_detail.dart';
 
-class TeamsPage extends StatefulWidget {
-  const TeamsPage({super.key});
+class DriversEntryPage extends StatefulWidget {
+  const DriversEntryPage({super.key});
 
   @override
-  State<TeamsPage> createState() => _TeamsPageState();
+  State<DriversEntryPage> createState() => _DriversEntryPageState();
 }
 
-class _TeamsPageState extends State<TeamsPage> {
-  List<TeamsEntry> _allTeams = [];
-  List<TeamsEntry> _filteredTeams = [];
+class _DriversEntryPageState extends State<DriversEntryPage> {
+  List<DriversEntry> _allDrivers = [];
+  List<DriversEntry> _filteredDrivers = [];
   String _searchQuery = "";
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    fetchTeams();
+    fetchDrivers();
   }
 
-  Future<void> fetchTeams() async {
-    const url = 'http://localhost:8000/information/api/teams/'; 
+  Future<void> fetchDrivers() async {
+    const url = 'http://localhost:8000/information/api/drivers/';
     
     try {
       final response = await http.get(Uri.parse(url));
@@ -37,60 +37,55 @@ class _TeamsPageState extends State<TeamsPage> {
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
         setState(() {
-          _allTeams = data.map((x) => TeamsEntry.fromJson(x)).toList();
-          _filteredTeams = _allTeams;
+          _allDrivers = data.map((x) => DriversEntry.fromJson(x)).toList();
+          _filteredDrivers = _allDrivers;
           _isLoading = false;
         });
       } else {
-        throw Exception('Failed to load teams');
+        throw Exception('Failed to load drivers');
       }
     } catch (e) {
       setState(() {
         _isLoading = false;
       });
-      debugPrint("Error fetching teams: $e");
+      debugPrint("Error fetching data: $e");
     }
   }
 
   void _runFilter(String enteredKeyword) {
-    List<TeamsEntry> results = [];
+    List<DriversEntry> results = [];
     if (enteredKeyword.isEmpty) {
-      results = _allTeams;
+      results = _allDrivers;
     } else {
-      results = _allTeams.where((team) {
-        final name = team.name.toLowerCase();
-        final fullName = team.fullName.toLowerCase();
-        final keyword = enteredKeyword.toLowerCase();
-        return name.contains(keyword) || fullName.contains(keyword);
-      }).toList();
+      results = _allDrivers
+          .where((driver) =>
+              driver.fullName.toLowerCase().contains(enteredKeyword.toLowerCase()))
+          .toList();
     }
 
     setState(() {
-      _filteredTeams = results;
+      _filteredDrivers = results;
       _searchQuery = enteredKeyword;
     });
   }
 
-  Widget _buildContent(BuildContext context, bool isDesktop) {
-    int gridCount = isDesktop ? 2 : 1;
-    double aspectRatio = isDesktop ? 2.5 : 2.1;
-
+  Widget _buildContent(BuildContext context) {
     return _isLoading
         ? const Center(child: CircularProgressIndicator())
         : RefreshIndicator(
-            onRefresh: fetchTeams,
+            onRefresh: fetchDrivers,
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    padding: const EdgeInsets.fromLTRB(20, 30, 20, 20),
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "2025 Teams",
+                          "2025 Drivers",
                           style: GoogleFonts.inter(
                             color: Colors.white,
                             fontSize: 32,
@@ -99,7 +94,7 @@ class _TeamsPageState extends State<TeamsPage> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          "Discover the constructors, leadership, and engineering behind each car.",
+                          "Explore every driver’s profile, stats, and story from the 2025 F1 season.",
                           style: GoogleFonts.inter(
                             color: Colors.white70,
                             fontSize: 16,
@@ -109,6 +104,7 @@ class _TeamsPageState extends State<TeamsPage> {
                     ),
                   ),
 
+                  // Search Bar
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                     child: TextField(
@@ -117,7 +113,7 @@ class _TeamsPageState extends State<TeamsPage> {
                       decoration: InputDecoration(
                         filled: true,
                         fillColor: const Color(0xFF262626),
-                        hintText: "Search by team name...",
+                        hintText: "Search by driver name...",
                         hintStyle: GoogleFonts.inter(color: Colors.grey[400]),
                         prefixIcon: const Icon(Icons.search, color: Colors.grey),
                         border: OutlineInputBorder(
@@ -136,50 +132,42 @@ class _TeamsPageState extends State<TeamsPage> {
                     ),
                   ),
 
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 10),
 
-                  if (_filteredTeams.isEmpty)
+                  if (_filteredDrivers.isEmpty)
                     Center(
                       child: Padding(
                         padding: const EdgeInsets.all(40.0),
                         child: Text(
-                          "No teams found",
+                          "No drivers found",
                           style: GoogleFonts.inter(color: Colors.grey),
                         ),
                       ),
                     )
                   else
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: gridCount,
-                          crossAxisSpacing: 16,
-                          mainAxisSpacing: 16,
-                          childAspectRatio: aspectRatio,
-                        ),
-                        itemCount: _filteredTeams.length,
-                        itemBuilder: (context, index) {
-                          final team = _filteredTeams[index];
-                          
-                          return InkWell(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => TeamDetailPage(team: team),
-                                ),
-                              );
-                            },
-                            borderRadius: BorderRadius.circular(24),
-                            child: TeamCard(team: team),
-                          );
-                        },
-                      ),
+                    ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: _filteredDrivers.length,
+                      itemBuilder: (context, index) {
+                        final driver = _filteredDrivers[index];
+                        
+                        return InkWell(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => DriverDetailPage(driver: driver),
+                              ),
+                            );
+                          },
+                          splashColor: Colors.white.withOpacity(0.1),
+                          highlightColor: Colors.white.withOpacity(0.05),
+                          child: DriverCard(driver: driver),
+                        );
+                      },
                     ),
-
+                  
                   const SizedBox(height: 40),
                 ],
               ),
@@ -199,8 +187,8 @@ class _TeamsPageState extends State<TeamsPage> {
           ? null
           : AppBar(
               title: Text(
-                "Teams",
-                style: GoogleFonts.inter(fontWeight: FontWeight.bold),
+                "Drivers", 
+                style: GoogleFonts.inter(fontWeight: FontWeight.bold)
               ),
               backgroundColor: const Color(0xFF171717),
               foregroundColor: Colors.white,
@@ -216,7 +204,7 @@ class _TeamsPageState extends State<TeamsPage> {
           Expanded(
             child: Container(
               color: const Color(0xFF171717),
-              child: _buildContent(context, isDesktop),
+              child: _buildContent(context),
             ),
           ),
         ],

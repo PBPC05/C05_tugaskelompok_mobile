@@ -10,7 +10,7 @@ String scheduleEntryToJson(ScheduleEntry data) => json.encode(data.toJson());
 
 class ScheduleEntry {
     int season;
-    List<Datum> data;
+    List<Race> data;
 
     ScheduleEntry({
         required this.season,
@@ -19,7 +19,7 @@ class ScheduleEntry {
 
     factory ScheduleEntry.fromJson(Map<String, dynamic> json) => ScheduleEntry(
         season: json["season"],
-        data: List<Datum>.from(json["data"].map((x) => Datum.fromJson(x))),
+        data: List<Race>.from(json["data"].map((x) => Race.fromJson(x))),
     );
 
     Map<String, dynamic> toJson() => {
@@ -28,7 +28,7 @@ class ScheduleEntry {
     };
 }
 
-class Datum {
+class Race {
     int season;
     int roundNumber;
     String name;
@@ -36,7 +36,7 @@ class Datum {
     DateTime date;
     String url;
 
-    Datum({
+    Race({
         required this.season,
         required this.roundNumber,
         required this.name,
@@ -45,7 +45,7 @@ class Datum {
         required this.url,
     });
 
-    factory Datum.fromJson(Map<String, dynamic> json) => Datum(
+    factory Race.fromJson(Map<String, dynamic> json) => Race(
         season: json["season"],
         roundNumber: json["round_number"],
         name: json["name"],
