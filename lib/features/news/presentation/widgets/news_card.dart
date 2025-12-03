@@ -1,11 +1,22 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:pittalk_mobile/features/news/data/news_model.dart';
+import 'package:provider/provider.dart';
 
 class NewsCard extends StatelessWidget {
   final News news;
   final VoidCallback onTap;
+  final Function(bool updated)? editResult;
 
-  const NewsCard({super.key, required this.news, required this.onTap});
+  const NewsCard({
+    super.key,
+    required this.news,
+    required this.onTap,
+    required this.editResult,
+  });
 
   String _formatDate(DateTime date) {
     // Simple date formatter without intl package
@@ -82,7 +93,7 @@ class NewsCard extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 18.0,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white
+                    color: Colors.white,
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -134,13 +145,23 @@ class NewsCard extends StatelessWidget {
                     ),
                     Row(
                       children: [
-                        Icon(Icons.visibility, size: 16, color: Colors.grey[600]),
+                        Icon(
+                          Icons.visibility,
+                          size: 16,
+                          color: Colors.grey[600],
+                        ),
                         const SizedBox(width: 2.0),
-                        Text("${news.newsViews}", style: TextStyle(color: Colors.grey[600])),
+                        Text(
+                          "${news.newsViews}",
+                          style: TextStyle(color: Colors.grey[600]),
+                        ),
                         const SizedBox(width: 4.0),
                         Icon(Icons.comment, size: 16, color: Colors.grey[600]),
                         const SizedBox(width: 2.0),
-                        Text("${news.newsComments}", style: TextStyle(color: Colors.grey[600])),
+                        Text(
+                          "${news.newsComments}",
+                          style: TextStyle(color: Colors.grey[600]),
+                        ),
                       ],
                     ),
                   ],
@@ -157,6 +178,78 @@ class NewsCard extends StatelessWidget {
                   style: const TextStyle(color: Colors.white),
                 ),
                 const SizedBox(height: 6),
+
+                // Edit and delete buttons
+                Row(
+                  children: [
+                    TextButton(
+                      child: const Text("Edit"),
+                      onPressed: () async {
+                        final updated = await context.push(
+                          '/news/edit-news/',
+                          extra: news,
+                        );
+
+                        if (editResult != null) {
+                          editResult!(updated == true);
+                        }
+                      },
+                    ),
+                    TextButton(
+                      child: const Text("Delete"),
+                      onPressed: () async {
+                        // Confirm user wants to delete
+                        final request = context.read<CookieRequest>();
+
+                        final confirm = await showDialog<bool>(
+                          context: context,
+                          builder: (context) {
+                            return AlertDialog(
+                              title: const Text("Delete Article"),
+                              content: Text(
+                                "Are you sure you want to delete '${news.title}'?",
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.pop(context, false),
+                                  child: const Text("Cancel"),
+                                ),
+                                ElevatedButton(
+                                  onPressed: () => Navigator.pop(context, true),
+                                  child: const Text("Delete"),
+                                ),
+                              ],
+                            );
+                          },
+                        );
+
+                        // If user cancels
+                        if (confirm != true) return;
+
+                        // If user continues
+                        final response = await request.postJson(
+                          "http://localhost:8000/news/${news.id}/delete-flutter/",
+                          jsonEncode({})
+                        );
+
+                        if (!context.mounted) return;
+
+                        if (response["status"] == "success") {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text("Article successfully deleted!"))
+                          );
+
+                          if (editResult != null) {
+                            editResult!(true);
+                          }
+                        } else {
+                          debugPrint("Error deleting article: ${response['message']}");
+                        }
+                      },
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
