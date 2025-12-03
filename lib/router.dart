@@ -11,6 +11,8 @@ import 'package:pittalk_mobile/features/information/presentation/screens/teams_p
 import 'package:pittalk_mobile/features/news/data/news_model.dart';
 import 'package:pittalk_mobile/features/news/presentation/screens/edit_form.dart';
 import 'package:pittalk_mobile/features/news/presentation/screens/news_form.dart';
+import 'package:pittalk_mobile/features/history/presentation/screens/winner_user_page.dart';
+import 'package:pittalk_mobile/features/history/presentation/screens/winner_admin_page.dart';
 import 'features/forums/forums.dart';
 import 'features/authentication/authentication.dart';
 import 'features/news/news.dart';
@@ -82,11 +84,20 @@ final router = GoRouter(
       routes: [
         GoRoute(
           path: 'drivers',
-          builder: (_, __) => const HistoryDriverUserPage(),
+          builder: (_, __) => const DriverUserPage(),
         ),
         GoRoute(
           path: 'drivers/admin',
-          builder: (_, __) => const HistoryDriverAdminPage(),
+          builder: (_, __) => const DriverAdminPage(),
+        ),
+
+        GoRoute(
+          path: 'winners',
+          builder: (_, __) => const WinnerUserPage(),
+        ),
+        GoRoute(
+          path: 'winners/admin',
+          builder: (_, __) => const WinnerAdminPage(),
         ),
       ],
     ),

@@ -1,55 +1,55 @@
 import 'package:flutter/material.dart';
+import '../../data/models/winner_model.dart';
 import '../../data/history_api.dart';
-import '../../data/models/driver_model.dart';
-import '../widgets/driver_carousel.dart';
-import '../widgets/driver_filter.dart';
-import '../widgets/driver_table.dart';
+import '../widgets/winner_carousel.dart';
+import '../widgets/winner_filter.dart';
+import '../widgets/winner_table.dart';
 
 import 'package:pittalk_mobile/mainpage/presentation/widgets/sidebar.dart';
 import 'package:go_router/go_router.dart';
 
-class DriverUserPage extends StatefulWidget {
-  const DriverUserPage({super.key});
-
+class WinnerUserPage extends StatefulWidget {
+  const WinnerUserPage({super.key});
   @override
-  State<DriverUserPage> createState() => _DriverUserPageState();
+  State<WinnerUserPage> createState() => _WinnerUserPageState();
 }
 
-class _DriverUserPageState extends State<DriverUserPage> {
+class _WinnerUserPageState extends State<WinnerUserPage> {
   final HistoryApi api = HistoryApi();
-  List<Driver> allDrivers = [];
-  List<Driver> displayed = [];
-  List<Driver> newest = [];
+  List<Winner> allWinners = [];
+  List<Winner> displayed = [];
+  List<Winner> newest = [];
   bool loading = true;
 
   @override
   void initState() {
     super.initState();
-    fetchDrivers();
+    fetchWinners();
   }
 
-  Future<void> fetchDrivers() async {
+  Future<void> fetchWinners() async {
     setState(() => loading = true);
     try {
-      final drivers = await api.fetchDrivers();
-
-      final latest = List<Driver>.from(drivers);
+      final winners = await api.fetchWinners();
+      // newest = 3 berdasarkan id terbesar (ambil terakhir)
+      final latest = List<Winner>.from(winners);
       latest.sort((a, b) => b.id.compareTo(a.id));
       newest = latest.take(3).toList();
 
       setState(() {
-        allDrivers = drivers;
-        displayed = List.from(drivers);
+        allWinners = winners;
+        displayed = List.from(winners);
         loading = false;
       });
     } catch (e) {
-      debugPrint("Error fetch drivers: $e");
+      // tampilkan console error saja
+      debugPrint("Error fetch winners (user): $e");
       if (mounted) setState(() => loading = false);
     }
   }
 
   void resetFilter() {
-    setState(() => displayed = List.from(allDrivers));
+    setState(() => displayed = List.from(allWinners));
   }
 
   @override
@@ -58,13 +58,13 @@ class _DriverUserPageState extends State<DriverUserPage> {
       backgroundColor: const Color(0xFF111111),
       appBar: AppBar(
         backgroundColor: Colors.black,
-        title: const Text("Driver History", style: TextStyle(color: Colors.white)),
+        title: const Text("Grand Prix Winners", style: TextStyle(color: Colors.white)),
       ),
 
       drawer: PitTalkSidebar(
         currentRoute: GoRouterState.of(context).uri.toString(),
       ),
-
+    
       body: loading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
@@ -72,28 +72,29 @@ class _DriverUserPageState extends State<DriverUserPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Title
                   const Text(
-                    "Driver History Overview",
+                    "Grand Prix History",
                     style: TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold),
                   ),
-
                   const SizedBox(height: 16),
 
-                  DriverCarousel(drivers: newest),
+                  // Carousel (3 terbaru)
+                  WinnerCarousel(winners: newest, imageProxy: api.proxiedImage),
 
                   const SizedBox(height: 20),
 
-                  DriverFilter(
-                    allDrivers: allDrivers,
+                  // Filter
+                  WinnerFilter(
+                    allWinners: allWinners,
                     onChanged: (list) => setState(() => displayed = list),
                     onReset: resetFilter,
                   ),
 
                   const SizedBox(height: 20),
 
-                  Center(
-                    child: DriverTable(drivers: displayed, isAdmin: false),
-                  ),
+                  // Table (user: tanpa actions)
+                  Center(child: WinnerTable(winners: displayed, isAdmin: false)),
                 ],
               ),
             ),

@@ -1,86 +1,118 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import '../../data/models/driver_model.dart';
 import 'dart:convert';
+import 'package:http/http.dart' as http;
+
+import '../../data/models/driver_model.dart';
 
 class DriverEditModal extends StatefulWidget {
   final Driver driver;
   final Future<void> Function() onUpdated;
 
-  const DriverEditModal({super.key, required this.driver, required this.onUpdated});
+  const DriverEditModal({
+    super.key,
+    required this.driver,
+    required this.onUpdated,
+  });
 
   @override
   State<DriverEditModal> createState() => _DriverEditModalState();
 }
 
 class _DriverEditModalState extends State<DriverEditModal> {
-  final Map<String, TextEditingController> c = {};
+  final _formKey = GlobalKey<FormState>();
+
+  late Map<String, dynamic> input;
+  bool saving = false;
 
   @override
   void initState() {
     super.initState();
-    c["driver_name"] = TextEditingController(text: widget.driver.driverName);
-    c["nationality"] = TextEditingController(text: widget.driver.nationality);
-    c["car"] = TextEditingController(text: widget.driver.car);
-    c["points"] = TextEditingController(text: widget.driver.points.toString());
-    c["podiums"] = TextEditingController(text: widget.driver.podiums.toString());
-    c["year"] = TextEditingController(text: widget.driver.year.toString());
-    c["image_url"] = TextEditingController(text: widget.driver.imageUrl ?? "");
+    input = {
+      "driver_name": widget.driver.driverName,
+      "nationality": widget.driver.nationality,
+      "car": widget.driver.car,
+      "points": widget.driver.points,
+      "podiums": widget.driver.podiums,
+      "year": widget.driver.year,
+      "image_url": widget.driver.imageUrl ?? "",
+    };
   }
 
   Future<void> submit() async {
-    // Pake localhostnya ntar diganti pakai pws
-    // Localhost: "http://localhost:8000/history/driver/edit/${widget.driver.id}/"
-    final url = Uri.parse(
-        "https://ammar-muhammad41-pittalk.pbp.cs.ui.ac.id//history/driver/edit/${widget.driver.id}/");
+    if (!_formKey.currentState!.validate()) return;
+    _formKey.currentState!.save();
 
-    await http.post(url,
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
-          "driver_name": c["driver_name"]!.text,
-          "nationality": c["nationality"]!.text,
-          "car": c["car"]!.text,
-          "points": double.tryParse(c["points"]!.text) ?? 0,
-          "podiums": int.tryParse(c["podiums"]!.text) ?? 0,
-          "year": int.tryParse(c["year"]!.text) ?? 0,
-          "image_url": c["image_url"]!.text,
-        }));
+    setState(() => saving = true);
+
+    final url = Uri.parse("http://localhost:8000/history/driver/edit/${widget.driver.id}/");
+
+    await http.post(
+      url,
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode(input),
+    );
+
+    setState(() => saving = false);
 
     widget.onUpdated();
-    Navigator.pop(context);
+    if (mounted) Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      backgroundColor: Colors.black87,
+      backgroundColor: Colors.grey.shade900,
       title: const Text("Edit Driver", style: TextStyle(color: Colors.white)),
       content: SingleChildScrollView(
-        child: Column(
-          children: c.entries.map((e) {
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: TextField(
-                controller: e.value,
-                style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                    labelText: e.key,
-                    labelStyle: const TextStyle(color: Colors.white70),
-                    filled: true,
-                    fillColor: Colors.grey.shade800),
-              ),
-            );
-          }).toList(),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              _field("Driver Name", "driver_name"),
+              _field("Nationality", "nationality"),
+              _field("Car", "car"),
+              _field("Points", "points", number: true),
+              _field("Podiums", "podiums", number: true),
+              _field("Year", "year", number: true),
+              _field("Image URL", "image_url"),
+            ],
+          ),
         ),
       ),
       actions: [
         TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel", style: TextStyle(color: Colors.redAccent))),
-        TextButton(
-            onPressed: submit,
-            child: const Text("Save", style: TextStyle(color: Colors.greenAccent))),
+          onPressed: () => Navigator.pop(context),
+          child: const Text("Cancel", style: TextStyle(color: Colors.white)),
+        ),
+        ElevatedButton(
+          onPressed: saving ? null : submit,
+          child: saving ? const CircularProgressIndicator() : const Text("Save"),
+        ),
       ],
+    );
+  }
+
+  Widget _field(String label, String key, {bool number = false}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: TextFormField(
+        initialValue: input[key].toString(),
+        style: const TextStyle(color: Colors.white),
+        keyboardType: number ? TextInputType.number : TextInputType.text,
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: const TextStyle(color: Colors.white70),
+          filled: true,
+          fillColor: Colors.grey.shade800,
+        ),
+        onSaved: (v) {
+          if (number) {
+            input[key] = double.tryParse(v!) ?? 0;
+          } else {
+            input[key] = v ?? "";
+          }
+        },
+      ),
     );
   }
 }

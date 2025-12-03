@@ -66,7 +66,10 @@ class _PitTalkSidebarState extends State<PitTalkSidebar>
               onTap: () => setState(() => historyExpanded = !historyExpanded),
               children: [
                 _navChild(context, "Drivers History", "/history/drivers"),
+                _navChild(context, "Drivers History Admin", "/history/drivers/admin"),
                 _navChild(context, "GP History", "/history/gp"),
+                _navChild(context, "GP Winners History", "/history/winners"),
+                _navChild(context, "GP Winners Admin", "/history/winners/admin"),
               ],
             ),
     
