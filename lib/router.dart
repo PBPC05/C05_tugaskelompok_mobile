@@ -8,6 +8,9 @@ import 'package:pittalk_mobile/features/information/presentation/screens/drivers
 import 'package:pittalk_mobile/features/information/presentation/screens/schedule_page.dart';
 import 'package:pittalk_mobile/features/information/presentation/screens/standings_page.dart';
 import 'package:pittalk_mobile/features/information/presentation/screens/teams_page.dart';
+import 'package:pittalk_mobile/features/news/data/news_model.dart';
+import 'package:pittalk_mobile/features/news/presentation/screens/edit_form.dart';
+import 'package:pittalk_mobile/features/news/presentation/screens/news_form.dart';
 import 'features/forums/forums.dart';
 import 'features/authentication/authentication.dart';
 import 'features/news/news.dart';
@@ -58,6 +61,19 @@ final router = GoRouter(
     GoRoute(
       path: '/news',
       builder: (_, __) => const NewsPage(),
+      routes: [
+        GoRoute(
+          path: 'create-news',
+          builder: (_, __) => const NewsFormPage(),
+        ),
+        GoRoute(
+          path: 'edit-news',
+          builder: (context, state) {
+            final news = state.extra as News;
+            return EditFormPage(news: news,);
+          },
+        ),
+      ]
     ),
 
     GoRoute(
