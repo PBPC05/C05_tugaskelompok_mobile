@@ -1,18 +1,19 @@
 import 'dart:convert';
 
+// ===============================
+// Forums Pagination Entry
+// ===============================
 
 ForumsEntry forumsEntryFromJson(String str) =>
     ForumsEntry.fromJson(json.decode(str));
 
-RepliesEntry repliesEntryFromJson(String str) =>
-    RepliesEntry.fromJson(json.decode(str));
-
+String forumsEntryToJson(ForumsEntry data) => json.encode(data.toJson());
 
 class ForumsEntry {
-  final int count;
-  final int numPages;
-  final int page;
-  final List<ForumResult> results;
+  int count;
+  int numPages;
+  int page;
+  List<ForumResult> results;
 
   ForumsEntry({
     required this.count,
@@ -34,24 +35,26 @@ class ForumsEntry {
         "count": count,
         "num_pages": numPages,
         "page": page,
-        "results": results.map((x) => x.toJson()).toList(),
+        "results": List<dynamic>.from(results.map((x) => x.toJson())),
       };
 }
 
+// ===============================
+// Forum Item
+// ===============================
 
 class ForumResult {
-  final String forumsId;
-  final String title;
-  final String content;
-  final int forumsViews;
-  final int forumsRepliesCounts;
-  final bool isHot;
+  String forumsId;
+  String title;
+  String content;
+  int forumsViews;
+  int forumsRepliesCounts;
+  bool isHot;
+  DateTime createdAt;
+  DateTime updatedAt;
 
-  final DateTime createdAt;
-  final DateTime updatedAt;
-
-  final List<int> forumsLikes;
-  final Author user; 
+  List<int> forumsLikes;
+  Author user;
 
   ForumResult({
     required this.forumsId,
@@ -75,7 +78,7 @@ class ForumResult {
         isHot: json["is_hot"],
         createdAt: DateTime.parse(json["created_at"]),
         updatedAt: DateTime.parse(json["updated_at"]),
-        forumsLikes: List<int>.from(json["forums_likes"]),
+        forumsLikes: List<int>.from(json["forums_likes"].map((x) => x)),
         user: Author.fromJson(json["user"]),
       );
 
@@ -88,16 +91,20 @@ class ForumResult {
         "is_hot": isHot,
         "created_at": createdAt.toIso8601String(),
         "updated_at": updatedAt.toIso8601String(),
-        "forums_likes": forumsLikes,
+        "forums_likes": List<dynamic>.from(forumsLikes.map((x) => x)),
         "user": user.toJson(),
       };
 }
 
+// ===============================
+// Replies Pagination Entry
+// ===============================
+
 class RepliesEntry {
-  final int count;
-  final int numPages;
-  final int page;
-  final List<ReplyResult> results;
+  int count;
+  int numPages;
+  int page;
+  List<ReplyResult> results;
 
   RepliesEntry({
     required this.count,
@@ -119,18 +126,21 @@ class RepliesEntry {
         "count": count,
         "num_pages": numPages,
         "page": page,
-        "results": results.map((x) => x.toJson()).toList(),
+        "results": List<dynamic>.from(results.map((x) => x.toJson())),
       };
 }
 
-class ReplyResult {
-  final int id;
-  final String forums;
-  final String repliesContent;
-  final DateTime createdAt;
+// ===============================
+// Reply Item
+// ===============================
 
-  final List<int> repliesLikes;
-  final Author user;
+class ReplyResult {
+  int id;
+  String forums; // UUID string
+  String repliesContent;
+  DateTime createdAt;
+  List<int> repliesLikes;
+  Author user;
 
   ReplyResult({
     required this.id,
@@ -143,10 +153,11 @@ class ReplyResult {
 
   factory ReplyResult.fromJson(Map<String, dynamic> json) => ReplyResult(
         id: json["id"],
-        forums: json["forums"], // UUID
+        forums: json["forums"],
         repliesContent: json["replies_content"],
         createdAt: DateTime.parse(json["created_at"]),
-        repliesLikes: List<int>.from(json["forums_replies_likes"]),
+        repliesLikes:
+            List<int>.from(json["forums_replies_likes"].map((x) => x)),
         user: Author.fromJson(json["user"]),
       );
 
@@ -155,39 +166,19 @@ class ReplyResult {
         "forums": forums,
         "replies_content": repliesContent,
         "created_at": createdAt.toIso8601String(),
-        "forums_replies_likes": repliesLikes,
+        "forums_replies_likes":
+            List<dynamic>.from(repliesLikes.map((x) => x)),
         "user": user.toJson(),
       };
-  
-  ReplyResult copyWith({
-    int? id,
-    String? forum,
-    String? content,
-    DateTime? createdAt,
-    List<int>? likes,
-    Author? user,
-    bool? userHasLiked,
-    bool? isOwner,
-    bool? isForumOwner,
-  }) {
-    return ReplyResult(
-      id: id ?? this.id,
-      forums: forum ?? this.forums,
-      repliesContent: content ?? this.repliesContent,
-      createdAt: createdAt ?? this.createdAt,
-      repliesLikes: likes ?? this.repliesLikes,
-      user: user ?? this.user,
-      userHasLiked: userHasLiked ?? this.userHasLiked,
-      isOwner: isOwner ?? this.isOwner,
-      isForumOwner: isForumOwner ?? this.isForumOwner,
-    );
-  }
 }
 
+// ===============================
+// Author (User Minimal Data)
+// ===============================
 
 class Author {
-  final int id;
-  final String username;
+  int id;
+  String username;
 
   Author({
     required this.id,

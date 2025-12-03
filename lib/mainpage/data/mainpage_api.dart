@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:pittalk_mobile/features/news/data/news_model.dart';
 import 'package:pittalk_mobile/features/forums/data/forums_model.dart';
 
-class ApiService {
+class ApiMainPage {
   static const baseUrl = "https://ammar-muhammad41-pittalk.pbp.cs.ui.ac.id";
 
   static Future<List<News>> fetchNews() async {
@@ -15,7 +15,7 @@ class ApiService {
     return [];
   }
 
-  static Future<List<Result>> fetchForums() async {
+  static Future<List<ForumResult>> fetchForums() async {
     final resp = await http.get(Uri.parse('$baseUrl/forums/api/json/'));
   
     if (resp.statusCode == 200) {

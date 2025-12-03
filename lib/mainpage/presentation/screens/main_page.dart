@@ -113,7 +113,7 @@ class _NewsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder(
-      future: ApiService.fetchNews(),
+      future: ApiMainPage.fetchNews(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: Padding(
@@ -160,7 +160,7 @@ class _ForumsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder(
-      future: ApiService.fetchForums(),
+      future: ApiMainPage.fetchForums(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: Padding(
@@ -184,12 +184,12 @@ class _ForumsSection extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 14),
               child: ForumsCard(
                 title: f.title,
-                author: f.author,
+                author: f.user.username,
                 content: f.content,
                 date: f.createdAt.toString(),
                 replies: f.forumsRepliesCounts,
                 onTap: () {
-                  context.go("/forums/${f.id}");
+                  context.go("/forums/${f.forumsId}");
                 },
               ),
             );
