@@ -73,9 +73,6 @@ class _NewsPageState extends State<NewsPage> {
     return Scaffold(
       backgroundColor: const Color(0xFF111111),
       appBar: AppBar(title: const Text("PitTalk News")),
-      drawer: PitTalkSidebar(
-        currentRoute: GoRouterState.of(context).uri.toString(),
-      ),
       body: Column(
         children: [
           // Dropdown button for filtering
@@ -162,6 +159,7 @@ class _NewsPageState extends State<NewsPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
+                          SizedBox(height: 12),
                           Text(
                             'No news found',
                             style: TextStyle(

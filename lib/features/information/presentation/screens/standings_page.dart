@@ -65,8 +65,8 @@ class _StandingsPageState extends State<StandingsPage> {
   Future<void> fetchAllStandings() async {
     setState(() => _isLoading = true);
 
-    const driversUrl = 'http://localhost:8000/information/api/standings/drivers/2025/';
-    const constructorsUrl = 'http://localhost:8000/information/api/standings/constructors/2025/';
+    const driversUrl = 'https://ammar-muhammad41-pittalk.pbp.cs.ui.ac.id/information/api/standings/drivers/2025/';
+    const constructorsUrl = 'https://ammar-muhammad41-pittalk.pbp.cs.ui.ac.id/information/api/standings/constructors/2025/';
 
     try {
       final responses = await Future.wait([
@@ -111,7 +111,7 @@ class _StandingsPageState extends State<StandingsPage> {
     );
 
     try {
-      final url = 'http://localhost:8000/information/api/drivers/$slug/';
+      final url = 'https://ammar-muhammad41-pittalk.pbp.cs.ui.ac.id/information/api/drivers/$slug/';
       final response = await http.get(Uri.parse(url));
 
       if (!mounted) return;
@@ -159,7 +159,7 @@ class _StandingsPageState extends State<StandingsPage> {
     );
 
     try {
-      final url = 'http://localhost:8000/information/api/teams/$slug/';
+      final url = 'https://ammar-muhammad41-pittalk.pbp.cs.ui.ac.id/information/api/teams/$slug/';
       final response = await http.get(Uri.parse(url));
 
       if (!mounted) return;

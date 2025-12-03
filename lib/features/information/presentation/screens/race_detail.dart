@@ -47,7 +47,7 @@ class _RaceDetailPageState extends State<RaceDetailPage> {
     final uri = Uri.parse(widget.raceUrl);
     final segments = uri.pathSegments.where((s) => s.isNotEmpty).toList();
     final slug = segments.isNotEmpty ? segments.last : "";
-    final url = 'http://localhost:8000/information/api/races/$slug/';
+    final url = 'https://ammar-muhammad41-pittalk.pbp.cs.ui.ac.id/information/api/races/$slug/';
     
     try {
       final response = await http.get(Uri.parse(url));
@@ -84,7 +84,7 @@ class _RaceDetailPageState extends State<RaceDetailPage> {
     );
 
     try {
-      final url = 'http://localhost:8000/information/api/drivers/$slug/';
+      final url = 'https://ammar-muhammad41-pittalk.pbp.cs.ui.ac.id/information/api/drivers/$slug/';
       final response = await http.get(Uri.parse(url));
 
       if (!mounted) return;
