@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pbp_django_auth/pbp_django_auth.dart';
+import 'package:pittalk_mobile/features/authentication/domain/services/admin_service.dart';
+import 'package:provider/provider.dart';
 
 class PitTalkSidebar extends StatefulWidget {
   final String currentRoute;
@@ -22,8 +25,32 @@ class _PitTalkSidebarState extends State<PitTalkSidebar>
   bool infoExpanded = false;
   bool historyExpanded = false;
 
+  bool isAdmin = false;
+  bool adminLoaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAdminStatus();
+  }
+
+  Future<void> _loadAdminStatus() async {
+    final request = context.read<CookieRequest>();
+    final adminService = AdminService(request);
+
+    final result = await adminService.isAdmin();
+
+    setState(() {
+      isAdmin = result;
+      adminLoaded = true;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    final request = context.watch<CookieRequest>();
+    final isLoggedIn = request.loggedIn;
+
     final sidebarWidth = 260.0;
 
     final content = Material(
@@ -67,20 +94,25 @@ class _PitTalkSidebarState extends State<PitTalkSidebar>
               children: [
                 _navChild(context, "Drivers History", "/history/drivers"),
                 _navChild(context, "Drivers History Admin", "/history/drivers/admin"),
-                _navChild(context, "GP History", "/history/gp"),
                 _navChild(context, "GP Winners History", "/history/winners"),
                 _navChild(context, "GP Winners Admin", "/history/winners/admin"),
               ],
             ),
     
             _navTile(context, "Predictions", "/prediction", Icons.timeline),
-            _navTile(context, "Admins", "/admins", Icons.admin_panel_settings),
-            _navTile(context, "User", "/user", Icons.person),
-            _navTile(context, "Login", "/login", Icons.login),
-            _navTile(context, "Register", "/register", Icons.app_registration),
-            _navTile(context, "User Dashboard", "/user_dashboard", Icons.dashboard),
-            _navTile(context, "Admin Dashboard", "/admin", Icons.admin_panel_settings),
-            _navTile(context, "Manage Users", "/admin/users", Icons.manage_accounts),
+            if (!isLoggedIn) ...[
+              _navTile(context, "Login", "/login", Icons.login),
+              _navTile(context, "Register", "/register", Icons.app_registration),
+            ],
+
+            if (isLoggedIn)
+              _navTile(context, "User Dashboard", "/user_dashboard", Icons.dashboard),
+
+            if (isLoggedIn && isAdmin) ...[
+              _navTile(context, "Admin Dashboard", "/admin", Icons.admin_panel_settings),
+              _navTile(context, "Manage Users", "/admin/users", Icons.manage_accounts),
+            ]
+            
           ],
         ),
       ),
@@ -121,7 +153,7 @@ class _PitTalkSidebarState extends State<PitTalkSidebar>
         ),
       ),
       onTap: () {
-        context.go(route);
+        context.push(route);
         widget.onClose?.call();
       },
     );
@@ -163,9 +195,11 @@ class _PitTalkSidebarState extends State<PitTalkSidebar>
         ),
       ),
       onTap: () {
-        context.go(route);
+        context.push(route);
         widget.onClose?.call();
       },
     );
   }
+
+  
 }
