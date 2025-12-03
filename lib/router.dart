@@ -1,6 +1,9 @@
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pittalk_mobile/features/authentication/presentation/screens/login.dart';
 import 'package:pittalk_mobile/features/authentication/presentation/screens/register.dart';
+import 'package:pittalk_mobile/mainpage/presentation/widgets/mobile_sidebar_wrapper.dart';
+import 'package:pittalk_mobile/mainpage/presentation/widgets/sidebar.dart';
 import 'features/forums/forums.dart';
 import 'features/authentication/authentication.dart';
 import 'features/news/news.dart';
@@ -20,53 +23,86 @@ final router = GoRouter(
 
     GoRoute(
       path: '/forums',
-      builder: (_, __) => const ForumsPage(),
+      builder: (_, __) => const PageWrapper(child: ForumsPage()),
     ),
 
     GoRoute(
       path: '/authentication',
-      builder: (_, __) => const AuthenticationPage(),
+      builder: (_, __) => const PageWrapper(child: AuthenticationPage()),
     ),
 
     GoRoute(
       path: '/news',
-      builder: (_, __) => const NewsPage(),
+      builder: (_, __) => const PageWrapper(child: NewsPage()),
     ),
 
     GoRoute(
       path: '/admins',
-      builder: (_, __) => const AdminsPage(),
+      builder: (_, __) => const PageWrapper(child: AdminsPage()),
     ),
 
     GoRoute(
       path: '/history',
-      builder: (_, __) => const HistoryPage(),
+      builder: (_, __) => const PageWrapper(child: HistoryPage()),
     ),
 
     GoRoute(
       path: '/information',
-      builder: (_, __) => const InformationPage(),
+      builder: (_, __) => const PageWrapper(child: InformationPage()),
     ),
 
     GoRoute(
       path: '/prediction',
-      builder: (_, __) => const PredictionPage(),
+      builder: (_, __) => const PageWrapper(child: PredictionPage()),
     ),
 
     GoRoute(
       path: '/user',
-      builder: (_, __) => const UserPage(),
+      builder: (_, __) => const PageWrapper(child: UserPage()),
     ),
 
     GoRoute(
       path: '/login',
-      builder: (_, __) => const LoginPage(),
+      builder: (_, __) => const PageWrapper(child: LoginPage()),
     ),
 
     GoRoute(
       path: '/register',
-      builder: (_, __) => const RegisterPage(),
+      builder: (_, __) => const PageWrapper(child: RegisterPage()),
     ),
     
   ],
 );
+
+class PageWrapper extends StatelessWidget {
+  final Widget child;
+
+  const PageWrapper({super.key, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDesktop = MediaQuery.of(context).size.width >= 900;
+    final currentRoute = GoRouterState.of(context).uri.toString();
+
+    final content = Scaffold(
+      appBar: isDesktop ? null : AppBar(backgroundColor: Colors.black),
+      body: Row(
+        children: [
+          if (isDesktop)
+            PitTalkSidebar(
+              currentRoute: currentRoute,
+              isMobile: false,
+            ),
+          Expanded(child: child),
+        ],
+      ),
+    );
+
+    return isDesktop
+        ? content
+        : MobileSidebarWrapper(
+            currentRoute: currentRoute,
+            child: content,
+          );
+  }
+}

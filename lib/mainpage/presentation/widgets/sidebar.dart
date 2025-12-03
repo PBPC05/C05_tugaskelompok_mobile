@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pbp_django_auth/pbp_django_auth.dart';
+import 'package:provider/provider.dart';
 
 class PitTalkSidebar extends StatefulWidget {
   final String currentRoute;
@@ -24,6 +26,9 @@ class _PitTalkSidebarState extends State<PitTalkSidebar>
 
   @override
   Widget build(BuildContext context) {
+    final request = Provider.of<CookieRequest>(context);
+    bool isLoggedIn = request.loggedIn;
+
     final sidebarWidth = 260.0;
 
     final content = Material(
@@ -67,14 +72,19 @@ class _PitTalkSidebarState extends State<PitTalkSidebar>
               children: [
                 _navChild(context, "Drivers History", "/history/drivers"),
                 _navChild(context, "GP History", "/history/gp"),
+                _navChild(context, "Drivers History (Admin)", "/"),
+                _navChild(context, "GP History (Admin)", "/"),
               ],
             ),
     
             _navTile(context, "Predictions", "/prediction", Icons.timeline),
-            _navTile(context, "Admins", "/admins", Icons.admin_panel_settings),
-            _navTile(context, "User", "/user", Icons.person),
-            _navTile(context, "Login", "/login", Icons.login),
-            _navTile(context, "Register", "/register", Icons.app_registration),
+            _navTile(context, "Admin Dashboard", "/admins", Icons.admin_panel_settings),
+            if (isLoggedIn)
+              _navTile(context, "Logout", "/logout", Icons.logout)
+            else ...[
+              _navTile(context, "Login", "/login", Icons.login),
+              _navTile(context, "Register", "/register", Icons.app_registration),
+            ]
           ],
         ),
       ),
@@ -115,7 +125,7 @@ class _PitTalkSidebarState extends State<PitTalkSidebar>
         ),
       ),
       onTap: () {
-        context.go(route);
+        context.push(route);
         widget.onClose?.call();
       },
     );
@@ -157,9 +167,11 @@ class _PitTalkSidebarState extends State<PitTalkSidebar>
         ),
       ),
       onTap: () {
-        context.go(route);
+        context.push(route);
         widget.onClose?.call();
       },
     );
   }
+
+  
 }
