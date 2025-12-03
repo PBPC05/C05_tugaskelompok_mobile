@@ -12,10 +12,8 @@ class HistoryApi {
   // Localhost: "http://localhost:8000/history";
   final String baseUrl = "http://localhost:8000/history";
 
-  // ============================================================
-  //                        DRIVER API
-  // ============================================================
 
+  // === DRIVER API ===
   // --- GET Drivers ---
   Future<List<Driver>> fetchDrivers() async {
     final res = await http.get(Uri.parse("$baseUrl/api/drivers/"));
@@ -30,7 +28,7 @@ class HistoryApi {
     final List<Driver> drivers =
         raw.map((json) => Driver.fromJson(json)).toList();
 
-    // Sorting sesuai website
+    // Sorting sesuai yg ada di website
     drivers.sort((a, b) {
       final ay = a.year;
       final by = b.year;
@@ -72,9 +70,7 @@ class HistoryApi {
     return res.statusCode == 200;
   }
 
-  // ============================================================
-  //                        IMAGE PROXY
-  // ============================================================
+  // === IMAGE PROXY ===
   String proxyImage(String? url) {
     if (url == null || url.isEmpty) return "";
     return "$baseUrl/proxy-image/?url=$url";
@@ -86,11 +82,8 @@ class HistoryApi {
     return "$baseUrl/proxy-image/?url=$url";
   }
 
-  // ============================================================
-  //                        WINNER API
-  // ============================================================
-
-  /// GET Winners
+  // === WINNER API ===
+  // --- GET Winners ---
   Future<List<Winner>> fetchWinners() async {
     final res = await http.get(Uri.parse("$baseUrl/api/winners/"));
 
@@ -104,7 +97,7 @@ class HistoryApi {
     return raw.map((json) => Winner.fromJson(json)).toList();
   }
 
-  /// ADD Winner
+  // --- ADD Winner ---
   Future<bool> addWinner(Map<String, dynamic> data) async {
     final res = await http.post(
       Uri.parse("$baseUrl/winner/add/"),
@@ -115,7 +108,7 @@ class HistoryApi {
     return res.statusCode == 200;
   }
 
-  /// EDIT Winner
+  // --- EDIT Winner ---
   Future<bool> editWinner(int id, Map<String, dynamic> data) async {
     final res = await http.post(
       Uri.parse("$baseUrl/winner/edit/$id/"),
@@ -126,7 +119,7 @@ class HistoryApi {
     return res.statusCode == 200;
   }
 
-  /// DELETE Winner
+  // --- DELETE Winner ---
   Future<bool> deleteWinner(int id) async {
     final res = await http.delete(
       Uri.parse("$baseUrl/winner/delete/$id/"),

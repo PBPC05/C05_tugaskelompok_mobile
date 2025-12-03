@@ -68,11 +68,11 @@ final router = GoRouter(
       routes: [
         GoRoute(
           path: 'drivers',
-          builder: (_, __) => const HistoryDriverUserPage(),
+          builder: (_, __) => const DriverUserPage(),
         ),
         GoRoute(
           path: 'drivers/admin',
-          builder: (_, __) => const HistoryDriverAdminPage(),
+          builder: (_, __) => const DriverAdminPage(),
         ),
 
         GoRoute(

@@ -38,14 +38,12 @@ class Winner {
     );
   }
 
-  // ========================================================
-  // Getter tambahan (biar tidak error di winner_table.dart)
-  // ========================================================
+  // Getter tambahan (biar gk error ntar di winner_table.dart)
 
   /// Sama seperti Driver -> driverName
   String get winnerName => winner;
 
-  /// Convert tanggal "2023-10-12" → "12 Oct 2023" (lebih rapi)
+  /// Convert tanggal "2023-10-12" --> "12 Oct 2023" (lbh rapi)
   String get dateString {
     try {
       final d = DateTime.parse(date);

@@ -62,27 +62,20 @@ class WinnerTable extends StatelessWidget {
               ),
 
               cells: [
-                DataCell(Center(
-                    child: Text("${i + 1}",
-                        style: const TextStyle(color: Colors.white)))),
-                DataCell(Center(
-                    child: Text(w.grandPrix,
-                        style: TextStyle(color: Colors.yellowAccent.shade700)))),
-                DataCell(Center(
-                    child: Text(w.dateString,
-                        style: TextStyle(color: Colors.yellowAccent.shade400)))),
-                DataCell(Center(
-                    child: Text(w.winnerName,
-                        style: TextStyle(color: Colors.yellowAccent.shade100)))),
-                DataCell(Center(
-                    child: Text(w.car,
-                        style: const TextStyle(color: Colors.white70)))),
-                DataCell(Center(
-                    child: Text(w.laps?.toString() ?? "-",
-                        style: const TextStyle(color: Colors.white70)))),
-                DataCell(Center(
-                    child: Text(w.time,
-                        style: const TextStyle(color: Colors.white70)))),
+                DataCell(Text("${i + 1}",
+                        style: const TextStyle(color: Colors.white))),
+                DataCell(Text(w.grandPrix,
+                        style: TextStyle(color: Colors.yellowAccent.shade700))),
+                DataCell(Text(w.dateString,
+                        style: TextStyle(color: Colors.yellowAccent.shade400))),
+                DataCell(Text(w.winnerName,
+                        style: TextStyle(color: Colors.yellowAccent.shade100))),
+                DataCell(Text(w.car,
+                        style: const TextStyle(color: Colors.white70))),
+                DataCell(Text(w.laps?.toString() ?? "-",
+                        style: const TextStyle(color: Colors.white70))),
+                DataCell(Text(w.time,
+                        style: const TextStyle(color: Colors.white70))),
 
                 if (isAdmin)
                   DataCell(
@@ -101,18 +94,18 @@ class WinnerTable extends StatelessWidget {
                               final ok = await showDialog<bool>(
                                 context: context,
                                 builder: (_) => AlertDialog(
-                                  title: const Text("Hapus?"),
+                                  title: const Text("Delete Winner?"),
                                   content:
-                                      const Text("Yakin ingin menghapus data ini?"),
+                                      Text("Are you sure you want to delete ${w.winner}?"),
                                   actions: [
                                     TextButton(
                                         onPressed: () =>
                                             Navigator.pop(context, false),
-                                        child: const Text("Batal")),
+                                        child: const Text("Cancel")),
                                     TextButton(
                                         onPressed: () =>
                                             Navigator.pop(context, true),
-                                        child: const Text("Hapus")),
+                                        child: const Text("Delete")),
                                   ],
                                 ),
                               );
