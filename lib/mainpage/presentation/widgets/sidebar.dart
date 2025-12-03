@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pbp_django_auth/pbp_django_auth.dart';
+import 'package:pittalk_mobile/features/authentication/domain/services/admin_service.dart';
 import 'package:provider/provider.dart';
 
 class PitTalkSidebar extends StatefulWidget {
@@ -24,10 +25,31 @@ class _PitTalkSidebarState extends State<PitTalkSidebar>
   bool infoExpanded = false;
   bool historyExpanded = false;
 
+  bool isAdmin = false;
+  bool adminLoaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAdminStatus();
+  }
+
+  Future<void> _loadAdminStatus() async {
+    final request = context.read<CookieRequest>();
+    final adminService = AdminService(request);
+
+    final result = await adminService.isAdmin();
+
+    setState(() {
+      isAdmin = result;
+      adminLoaded = true;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    final request = Provider.of<CookieRequest>(context);
-    bool isLoggedIn = request.loggedIn;
+    final request = context.watch<CookieRequest>();
+    final isLoggedIn = request.loggedIn;
 
     final sidebarWidth = 260.0;
 
@@ -71,20 +93,26 @@ class _PitTalkSidebarState extends State<PitTalkSidebar>
               onTap: () => setState(() => historyExpanded = !historyExpanded),
               children: [
                 _navChild(context, "Drivers History", "/history/drivers"),
-                _navChild(context, "GP History", "/history/gp"),
-                _navChild(context, "Drivers History (Admin)", "/"),
-                _navChild(context, "GP History (Admin)", "/"),
+                _navChild(context, "Drivers History Admin", "/history/drivers/admin"),
+                _navChild(context, "GP Winners History", "/history/winners"),
+                _navChild(context, "GP Winners Admin", "/history/winners/admin"),
               ],
             ),
     
             _navTile(context, "Predictions", "/prediction", Icons.timeline),
-            _navTile(context, "Admin Dashboard", "/admins", Icons.admin_panel_settings),
-            if (isLoggedIn)
-              _navTile(context, "Logout", "/logout", Icons.logout)
-            else ...[
+            if (!isLoggedIn) ...[
               _navTile(context, "Login", "/login", Icons.login),
               _navTile(context, "Register", "/register", Icons.app_registration),
+            ],
+
+            if (isLoggedIn)
+              _navTile(context, "User Dashboard", "/user_dashboard", Icons.dashboard),
+
+            if (isLoggedIn && isAdmin) ...[
+              _navTile(context, "Admin Dashboard", "/admin", Icons.admin_panel_settings),
+              _navTile(context, "Manage Users", "/admin/users", Icons.manage_accounts),
             ]
+            
           ],
         ),
       ),

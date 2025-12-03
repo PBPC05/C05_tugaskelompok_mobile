@@ -39,6 +39,8 @@ dependencies:
   pbp_django_auth: ^0.4.0
   http: ^1.6.0
   animated_tree_view: ^2.3.0
+  intl: ^0.20.2
+  google_fonts: ^6.3.2
 
 
 dev_dependencies:
