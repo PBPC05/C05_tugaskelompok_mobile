@@ -29,7 +29,7 @@ class _TeamsPageState extends State<TeamsPage> {
   }
 
   Future<void> fetchTeams() async {
-    const url = 'http://localhost:8000/information/api/teams/'; 
+    const url = 'https://ammar-muhammad41-pittalk.pbp.cs.ui.ac.id/information/api/teams/'; 
     
     try {
       final response = await http.get(Uri.parse(url));

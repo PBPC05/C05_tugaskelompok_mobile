@@ -29,7 +29,7 @@ class _DriversEntryPageState extends State<DriversEntryPage> {
   }
 
   Future<void> fetchDrivers() async {
-    const url = 'http://localhost:8000/information/api/drivers/';
+    const url = 'https://ammar-muhammad41-pittalk.pbp.cs.ui.ac.id/information/api/drivers/';
     
     try {
       final response = await http.get(Uri.parse(url));

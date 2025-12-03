@@ -28,7 +28,7 @@ class _SchedulePageState extends State<SchedulePage> {
   }
 
   Future<void> fetchSchedule() async {
-    const url = 'http://localhost:8000/information/api/schedule/2025';
+    const url = 'https://ammar-muhammad41-pittalk.pbp.cs.ui.ac.id/information/api/schedule/2025';
 
     try {
       final response = await http.get(Uri.parse(url));
