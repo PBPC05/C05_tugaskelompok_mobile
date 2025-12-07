@@ -12,7 +12,7 @@ class AuthService {
   // - iOS Simulator: use "http://127.0.0.1:8000"
   // - Physical device: use your computer's IP (e.g., "http://192.168.1.100:8000")
   // For production: use your deployed URL (e.g., "https://pbp.cs.ui.ac.id/ammar.muhammad41/pittalk")
-  static const String baseUrl = "http://localhost:8000"; // Change for production
+  static const String baseUrl = "https://ammar-muhammad41-pittalk.pbp.cs.ui.ac.id/"; // Change for production
   
   AuthService(this.request);
 
