@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
-import 'package:pittalk_mobile/mainpage/presentation/widgets/sidebar.dart';
-import 'package:pittalk_mobile/mainpage/presentation/widgets/mobile_sidebar_wrapper.dart';
 import 'package:pittalk_mobile/features/information/data/drivers_standings_entry.dart' as driver_model;
 import 'package:pittalk_mobile/features/information/data/teams_standings_entry.dart' as team_model;
 import 'package:pittalk_mobile/features/information/data/drivers_entry.dart';
@@ -507,7 +505,6 @@ class _StandingsPageState extends State<StandingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final currentRoute = GoRouterState.of(context).uri.toString();
     final isDesktop = MediaQuery.of(context).size.width >= 900;
 
     final content = Scaffold(
@@ -526,8 +523,6 @@ class _StandingsPageState extends State<StandingsPage> {
 
       body: Row(
         children: [
-          if (isDesktop)
-            PitTalkSidebar(currentRoute: currentRoute),
 
           Expanded(
             child: Container(
@@ -538,13 +533,6 @@ class _StandingsPageState extends State<StandingsPage> {
         ],
       ),
     );
-
-    if (!isDesktop) {
-      return MobileSidebarWrapper(
-        currentRoute: currentRoute,
-        child: content,
-      );
-    }
 
     return content;
   }
