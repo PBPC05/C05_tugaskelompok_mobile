@@ -104,7 +104,6 @@ class _DriversEntryPageState extends State<DriversEntryPage> {
                     ),
                   ),
 
-                  // Search Bar
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                     child: TextField(
