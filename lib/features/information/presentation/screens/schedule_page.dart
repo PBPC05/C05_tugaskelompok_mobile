@@ -5,8 +5,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:pittalk_mobile/features/information/data/schedule_entry.dart';
-import 'package:pittalk_mobile/mainpage/presentation/widgets/sidebar.dart';
-import 'package:pittalk_mobile/mainpage/presentation/widgets/mobile_sidebar_wrapper.dart';
 import 'package:pittalk_mobile/features/information/presentation/screens/race_detail.dart';
 
 class SchedulePage extends StatefulWidget {
@@ -440,8 +438,6 @@ class _SchedulePageState extends State<SchedulePage> {
             ),
       body: Row(
         children: [
-          if (isDesktop)
-            PitTalkSidebar(currentRoute: currentRoute),
           Expanded(
             child: Container(
               color: const Color(0xFF171717),
@@ -451,10 +447,6 @@ class _SchedulePageState extends State<SchedulePage> {
         ],
       ),
     );
-
-    if (!isDesktop) {
-      return MobileSidebarWrapper(currentRoute: currentRoute, child: content);
-    }
 
     return content;
   }
