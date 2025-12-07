@@ -195,10 +195,6 @@ class _DriversEntryPageState extends State<DriversEntryPage> {
 
       body: Row(
         children: [
-          if (isDesktop)
-            PitTalkSidebar(
-              currentRoute: currentRoute,
-            ),
 
           Expanded(
             child: Container(
@@ -209,13 +205,6 @@ class _DriversEntryPageState extends State<DriversEntryPage> {
         ],
       ),
     );
-
-    if (!isDesktop) {
-      return MobileSidebarWrapper(
-        currentRoute: currentRoute,
-        child: content,
-      );
-    }
 
     return content;
   }
