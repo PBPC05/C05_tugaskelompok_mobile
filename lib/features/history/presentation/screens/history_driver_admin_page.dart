@@ -64,9 +64,9 @@ class _DriverAdminPageState extends State<DriverAdminPage> {
         title: const Text("Driver Admin", style: TextStyle(color: Colors.white)),
       ),
 
-      drawer: PitTalkSidebar(
-        currentRoute: GoRouterState.of(context).uri.toString(),
-      ),
+      // drawer: PitTalkSidebar(
+      //   currentRoute: GoRouterState.of(context).uri.toString(),
+      // ),
 
       body: loading
           ? const Center(child: CircularProgressIndicator())

@@ -61,9 +61,9 @@ class _WinnerAdminPageState extends State<WinnerAdminPage> {
         title: const Text("Winner Admin", style: TextStyle(color: Colors.white)),
       ),
 
-      drawer: PitTalkSidebar(
-        currentRoute: GoRouterState.of(context).uri.toString(),
-      ),
+      // drawer: PitTalkSidebar(
+      //   currentRoute: GoRouterState.of(context).uri.toString(),
+      // ),
       
       body: loading
           ? const Center(child: CircularProgressIndicator())
