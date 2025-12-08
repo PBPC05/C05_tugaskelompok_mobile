@@ -229,7 +229,7 @@ class NewsCard extends StatelessWidget {
 
                         // If user continues
                         final response = await request.postJson(
-                          "http://localhost:8000/news/${news.id}/delete-flutter/",
+                          "https://ammar-muhammad41-pittalk.pbp.cs.ui.ac.id/news/${news.id}/delete-flutter/",
                           jsonEncode({})
                         );
 

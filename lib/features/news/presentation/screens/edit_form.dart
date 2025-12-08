@@ -233,7 +233,7 @@ class _EditFormPageState extends State<EditFormPage> {
                     if (_formKey.currentState!.validate()) {
                       // Post news to Django
                       final response = await request.postJson(
-                        "http://localhost:8000/news/$_id/edit-flutter/",
+                        "https://ammar-muhammad41-pittalk.pbp.cs.ui.ac.id/news/$_id/edit-flutter/",
                         jsonEncode({
                           "id": _id,
                           "title": _title,

@@ -16,21 +16,28 @@ class NewsPage extends StatefulWidget {
 
 class _NewsPageState extends State<NewsPage> {
   List<News> listNews = [];
-  late Future<List<News>> futureNews;
+  late Future<List<News>> futureNews = Future.value([]);
   String chosenCategory = "all";
+  bool isInitialLoading = true;
+  
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
     final request = context.read<CookieRequest>();
-    futureNews = fetchNews(request);
+    setState(() {
+      futureNews = fetchNews(request);
+    });
+  });
   }
 
   Future<List<News>> fetchNews(CookieRequest request) async {
     // Clear news list
     listNews.clear();
 
-    final response = await request.get('http://localhost:8000/news/json/');
+    final response = await request.get('https://ammar-muhammad41-pittalk.pbp.cs.ui.ac.id/news/json/');
+    debugPrint("");
 
     // Decode response to json format
     var data = response;
