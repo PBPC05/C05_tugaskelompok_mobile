@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
-import 'package:pittalk_mobile/mainpage/presentation/widgets/sidebar.dart';
-import 'package:pittalk_mobile/mainpage/presentation/widgets/mobile_sidebar_wrapper.dart';
 import 'package:pittalk_mobile/features/information/data/drivers_standings_entry.dart' as driver_model;
 import 'package:pittalk_mobile/features/information/data/teams_standings_entry.dart' as team_model;
 import 'package:pittalk_mobile/features/information/data/drivers_entry.dart';
@@ -65,8 +63,8 @@ class _StandingsPageState extends State<StandingsPage> {
   Future<void> fetchAllStandings() async {
     setState(() => _isLoading = true);
 
-    const driversUrl = 'http://localhost:8000/information/api/standings/drivers/2025/';
-    const constructorsUrl = 'http://localhost:8000/information/api/standings/constructors/2025/';
+    const driversUrl = 'https://ammar-muhammad41-pittalk.pbp.cs.ui.ac.id/information/api/standings/drivers/2025/';
+    const constructorsUrl = 'https://ammar-muhammad41-pittalk.pbp.cs.ui.ac.id/information/api/standings/constructors/2025/';
 
     try {
       final responses = await Future.wait([
@@ -111,7 +109,7 @@ class _StandingsPageState extends State<StandingsPage> {
     );
 
     try {
-      final url = 'http://localhost:8000/information/api/drivers/$slug/';
+      final url = 'https://ammar-muhammad41-pittalk.pbp.cs.ui.ac.id/information/api/drivers/$slug/';
       final response = await http.get(Uri.parse(url));
 
       if (!mounted) return;
@@ -159,7 +157,7 @@ class _StandingsPageState extends State<StandingsPage> {
     );
 
     try {
-      final url = 'http://localhost:8000/information/api/teams/$slug/';
+      final url = 'https://ammar-muhammad41-pittalk.pbp.cs.ui.ac.id/information/api/teams/$slug/';
       final response = await http.get(Uri.parse(url));
 
       if (!mounted) return;
@@ -507,7 +505,6 @@ class _StandingsPageState extends State<StandingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final currentRoute = GoRouterState.of(context).uri.toString();
     final isDesktop = MediaQuery.of(context).size.width >= 900;
 
     final content = Scaffold(
@@ -526,8 +523,6 @@ class _StandingsPageState extends State<StandingsPage> {
 
       body: Row(
         children: [
-          if (isDesktop)
-            PitTalkSidebar(currentRoute: currentRoute),
 
           Expanded(
             child: Container(
@@ -538,13 +533,6 @@ class _StandingsPageState extends State<StandingsPage> {
         ],
       ),
     );
-
-    if (!isDesktop) {
-      return MobileSidebarWrapper(
-        currentRoute: currentRoute,
-        child: content,
-      );
-    }
 
     return content;
   }

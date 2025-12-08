@@ -30,7 +30,7 @@ class _NewsPageState extends State<NewsPage> {
     // Clear news list
     listNews.clear();
 
-    final response = await request.get('https://ammar-muhammad41-pittalk.pbp.cs.ui.ac.id/news/json/');
+    final response = await request.get('http://localhost:8000/news/json/');
 
     // Decode response to json format
     var data = response;
@@ -46,9 +46,8 @@ class _NewsPageState extends State<NewsPage> {
 
   Future<void> refreshNews() async {
     final request = context.read<CookieRequest>();
-    final newsList = await fetchNews(request);
     setState(() {
-      listNews = newsList;
+      futureNews = fetchNews(request);
     });
   }
 
@@ -74,30 +73,45 @@ class _NewsPageState extends State<NewsPage> {
     return Scaffold(
       backgroundColor: const Color(0xFF111111),
       appBar: AppBar(title: const Text("PitTalk News")),
-      drawer: PitTalkSidebar(
-        currentRoute: GoRouterState.of(context).uri.toString(),
-      ),
       body: Column(
         children: [
           // Dropdown button for filtering
           Padding(
             padding: const EdgeInsets.all(8.0),
-            child: DropdownButton(
-              value: chosenCategory,
-              hint: const Text("Filter by category..."),
-              items: categoryMap.keys
-                  .map(
-                    (c) =>
-                        DropdownMenuItem(value: categoryMap[c], child: Text(c)),
-                  )
-                  .toList(),
-              onChanged: (value) {
-                setState(() {
-                  chosenCategory = value!;
-                });
-                refreshNews();
-              },
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text("Filter by category..."),
+                const SizedBox(width: 8.0),
+                DropdownButton(
+                  value: chosenCategory,
+                  hint: const Text("Filter by category..."),
+                  items: categoryMap.keys
+                      .map(
+                        (c) => DropdownMenuItem(
+                          value: categoryMap[c],
+                          child: Text(c),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      chosenCategory = value!;
+                    });
+                    refreshNews();
+                  },
+                ),
+              ],
             ),
+          ),
+
+          // Link to news form
+          ElevatedButton(
+            onPressed: () async {
+              final updated = await context.push('/news/create-news/');
+              if (updated == true) refreshNews();
+            },
+            child: const Text("Create news"),
           ),
 
           // Show news
@@ -133,6 +147,11 @@ class _NewsPageState extends State<NewsPage> {
                             ),
                           );
                         },
+                        editResult: (updated) {
+                          if (updated) {
+                            refreshNews();
+                          }
+                        },
                       ),
                     );
                   } else {
@@ -140,9 +159,14 @@ class _NewsPageState extends State<NewsPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
+                          SizedBox(height: 12),
                           Text(
                             'No news found',
-                            style: TextStyle(fontSize: 20, color: Colors.white, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              fontSize: 20,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                           SizedBox(height: 8),
                           Text(
