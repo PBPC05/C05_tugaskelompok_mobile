@@ -208,10 +208,6 @@ class _TeamsPageState extends State<TeamsPage> {
 
       body: Row(
         children: [
-          if (isDesktop)
-            PitTalkSidebar(
-              currentRoute: currentRoute,
-            ),
 
           Expanded(
             child: Container(
@@ -222,13 +218,6 @@ class _TeamsPageState extends State<TeamsPage> {
         ],
       ),
     );
-
-    if (!isDesktop) {
-      return MobileSidebarWrapper(
-        currentRoute: currentRoute,
-        child: content,
-      );
-    }
 
     return content;
   }

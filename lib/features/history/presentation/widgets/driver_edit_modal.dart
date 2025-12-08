@@ -44,7 +44,8 @@ class _DriverEditModalState extends State<DriverEditModal> {
 
     setState(() => saving = true);
 
-    final url = Uri.parse("http://localhost:8000/history/driver/edit/${widget.driver.id}/");
+    // "http://localhost:8000/history/driver/edit/${widget.driver.id}/"
+    final url = Uri.parse("https://ammar-muhammad41-pittalk.pbp.cs.ui.ac.id/history/driver/edit/${widget.driver.id}/");
 
     await http.post(
       url,

@@ -61,9 +61,9 @@ class _WinnerUserPageState extends State<WinnerUserPage> {
         title: const Text("Grand Prix Winners", style: TextStyle(color: Colors.white)),
       ),
 
-      drawer: PitTalkSidebar(
-        currentRoute: GoRouterState.of(context).uri.toString(),
-      ),
+      // drawer: PitTalkSidebar(
+      //   currentRoute: GoRouterState.of(context).uri.toString(),
+      // ),
     
       body: loading
           ? const Center(child: CircularProgressIndicator())
