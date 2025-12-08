@@ -150,12 +150,14 @@ class Driver {
 
 enum Status {
     FINISHED,
-    NC
+    NC,
+    DQ
 }
 
 final statusValues = EnumValues({
     "FINISHED": Status.FINISHED,
-    "NC": Status.NC
+    "NC": Status.NC,
+    "DQ": Status.DQ,
 });
 
 class Team {

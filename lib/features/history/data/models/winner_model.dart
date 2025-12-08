@@ -1,14 +1,13 @@
-// lib/features/history/data/models/winner_model.dart
 class Winner {
   final int id;
   final String grandPrix;
-  final String date; // store as ISO string
-  final String winner;
+  final String date;       // format yyyy-mm-dd
+  final String winner;     // nama winner nya
   final String car;
   final double? laps;
   final String time;
   final String? nameCode;
-  final String? imageUrl;
+  final String imageUrl;
 
   Winner({
     required this.id,
@@ -16,37 +15,49 @@ class Winner {
     required this.date,
     required this.winner,
     required this.car,
-    this.laps,
+    required this.laps,
     required this.time,
-    this.nameCode,
-    this.imageUrl,
+    required this.nameCode,
+    required this.imageUrl,
   });
 
+  /// Parsing JSON dari Django
   factory Winner.fromJson(Map<String, dynamic> json) {
+    final f = json["fields"] ?? {};
+
     return Winner(
-      id: json['id'] as int,
-      grandPrix: (json['grand_prix'] ?? '') as String,
-      date: (json['date'] ?? '') as String,
-      winner: (json['winner'] ?? '') as String,
-      car: (json['car'] ?? '') as String,
-      laps: json['laps'] != null ? double.tryParse(json['laps'].toString()) : null,
-      time: (json['time'] ?? '') as String,
-      nameCode: json['name_code'] as String?,
-      imageUrl: json['image_url'] as String?,
+      id: json["pk"],
+      grandPrix: f["grand_prix"] ?? "",
+      date: f["date"] ?? "",
+      winner: f["winner"] ?? "",
+      car: f["car"] ?? "",
+      laps: f["laps"] != null ? (f["laps"] as num).toDouble() : null,
+      time: f["time"] ?? "",
+      nameCode: f["name_code"],
+      imageUrl: f["image_url"] ?? "",
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'grand_prix': grandPrix,
-      'date': date,
-      'winner': winner,
-      'car': car,
-      'laps': laps,
-      'time': time,
-      'name_code': nameCode,
-      'image_url': imageUrl,
-    };
+  // Getter tambahan (biar gk error ntar di winner_table.dart)
+
+  /// Sama seperti Driver -> driverName
+  String get winnerName => winner;
+
+  /// Convert tanggal "2023-10-12" --> "12 Oct 2023" (lbh rapi)
+  String get dateString {
+    try {
+      final d = DateTime.parse(date);
+      return "${d.day} ${_monthName(d.month)} ${d.year}";
+    } catch (_) {
+      return date; // fallback
+    }
+  }
+
+  String _monthName(int m) {
+    const names = [
+      "", "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+    ];
+    return names[m];
   }
 }
