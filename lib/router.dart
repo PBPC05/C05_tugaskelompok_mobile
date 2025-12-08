@@ -11,7 +11,6 @@ import 'package:pittalk_mobile/features/history/presentation/screens/history_dri
 import 'package:pittalk_mobile/features/history/presentation/screens/history_page.dart';
 import 'package:pittalk_mobile/features/news/presentation/screens/news_page.dart';
 import 'package:pittalk_mobile/features/prediction/prediction.dart';
-import 'package:pittalk_mobile/features/user/presentation/screens/user_page.dart';
 import 'package:pittalk_mobile/mainpage/presentation/screens/main_page.dart';
 import 'package:pittalk_mobile/mainpage/presentation/widgets/mobile_sidebar_wrapper.dart';
 import 'package:pittalk_mobile/mainpage/presentation/widgets/sidebar.dart';
@@ -35,7 +34,7 @@ final router = GoRouter(
 
     GoRoute(
       path: '/forums',
-      builder: (_, __) => const PageWrapper(child: ForumsPage()),
+      builder: (_, __) => const PageWrapper(child: ForumListPage()),
     ),
 
     GoRoute(

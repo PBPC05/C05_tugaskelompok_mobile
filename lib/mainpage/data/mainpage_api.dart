@@ -15,13 +15,13 @@ class ApiMainPage {
     return [];
   }
 
-  static Future<List<ForumResult>> fetchForums() async {
+  static Future<List<Forum>> fetchForums() async {
     final resp = await http.get(Uri.parse('$baseUrl/forums/api/json/'));
   
     if (resp.statusCode == 200) {
       final Map<String, dynamic> json = jsonDecode(resp.body);
   
-      final ForumsEntry entry = ForumsEntry.fromJson(json);
+      final ForumListResponse entry = ForumListResponse.fromJson(json);
       return entry.results; 
     }
   

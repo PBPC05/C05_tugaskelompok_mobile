@@ -92,10 +92,13 @@ class _PitTalkSidebarState extends State<PitTalkSidebar>
               expanded: historyExpanded,
               onTap: () => setState(() => historyExpanded = !historyExpanded),
               children: [
-                _navChild(context, "Drivers History", "/history/drivers"),
-                _navChild(context, "Drivers History Admin", "/history/drivers/admin"),
-                _navChild(context, "GP Winners History", "/history/winners"),
-                _navChild(context, "GP Winners Admin", "/history/winners/admin"),
+                if (isLoggedIn && isAdmin) ...[
+                  _navChild(context, "Drivers History Admin", "/history/drivers/admin"),
+                  _navChild(context, "GP Winners Admin", "/history/winners/admin"),
+                ] else ...[
+                  _navChild(context, "Drivers History", "/history/drivers"),
+                  _navChild(context, "GP Winners History", "/history/winners"),
+                ],
               ],
             ),
     
@@ -108,11 +111,8 @@ class _PitTalkSidebarState extends State<PitTalkSidebar>
             if (isLoggedIn)
               _navTile(context, "User Dashboard", "/user_dashboard", Icons.dashboard),
 
-            if (isLoggedIn && isAdmin) ...[
+            if (isLoggedIn && isAdmin)
               _navTile(context, "Admin Dashboard", "/admin", Icons.admin_panel_settings),
-              _navTile(context, "Manage Users", "/admin/users", Icons.manage_accounts),
-            ]
-            
           ],
         ),
       ),

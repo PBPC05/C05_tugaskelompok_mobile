@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pittalk_mobile/features/forums/presentation/screens/forums_detail.dart';
 import 'package:pittalk_mobile/mainpage/data/mainpage_api.dart';
 
 import '../widgets/sidebar.dart';
@@ -17,12 +18,6 @@ class MainPage extends StatelessWidget {
     final isDesktop = MediaQuery.of(context).size.width >= 900;
 
     final content = Scaffold(
-      appBar: isDesktop
-          ? null
-          : AppBar(
-              backgroundColor: Colors.black,
-            ),
-
       body: Row(
         children: [
           if (isDesktop)
@@ -147,7 +142,9 @@ class _NewsSection extends StatelessWidget {
                 children: newsList.map((news) {
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 12),
-                    child: NewsCard(title: news.title, imageUrl: news.thumbnail, date: news.createdAt.toString(), views: news.newsViews),
+                    child: NewsCard(title: news.title, imageUrl: news.thumbnail,date: news.createdAt.toString(), views: news.newsViews,
+                    
+                    ),
                   );
                 }).toList(),
               );
@@ -184,12 +181,17 @@ class _ForumsSection extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 14),
               child: ForumsCard(
                 title: f.title,
-                author: f.user.username,
+                author: f.username ?? 'Anonymous',
                 content: f.content,
                 date: f.createdAt.toString(),
-                replies: f.forumsRepliesCounts,
+                replies: f.repliesCount,
                 onTap: () {
-                  context.go("/forums/${f.forumsId}");
+                  Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ForumDetailPage(forumId: f.id),
+                  ),
+                );
                 },
               ),
             );

@@ -1,233 +1,402 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:intl/intl.dart';
+import 'package:pittalk_mobile/features/forums/data/forums_api.dart';
 import 'package:pittalk_mobile/features/forums/data/forums_model.dart';
 import 'package:pittalk_mobile/features/forums/presentation/screens/forums_detail.dart';
 import 'package:pittalk_mobile/features/forums/presentation/screens/forums_form.dart';
-
-final String baseUrl = "https://ammar-muhammad41-pittalk.pbp.cs.ui.ac.id"; 
-
-Map<String, String> defaultHeaders([String? token]) {
-  final headers = <String, String>{
-    'Accept': 'application/json',
-    'Content-Type': 'application/json',
-  };
-  if (token != null) headers['Authorization'] = 'Token $token';
-  return headers;
-}
+import 'package:pittalk_mobile/features/forums/presentation/widget/forums_card.dart';
 
 class ForumListPage extends StatefulWidget {
   const ForumListPage({Key? key}) : super(key: key);
 
   @override
-  State<ForumListPage> createState() => _ForumListPageState();
+  _ForumListPageState createState() => _ForumListPageState();
 }
 
 class _ForumListPageState extends State<ForumListPage> {
-  List<ForumResult> forums = [];
-  bool loading = false;
-  bool error = false;
-  int page = 1;
-  int totalPages = 1;
-  String query = '';
-  String filter = 'latest';
-
+  final ForumsApiService _apiService = ForumsApiService();
   final TextEditingController _searchController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+
+  String _filter = 'latest';
+  String _searchQuery = '';
+  int _currentPage = 1;
+  int _totalPages = 1;
+  bool _isLoading = false;
+  List<Forum> _forums = [];
+  bool _hasError = false;
 
   @override
   void initState() {
     super.initState();
-    _fetchForums();
+    _loadForums();
   }
 
-  Future<void> _fetchForums({int p = 1, String q = '', String filterVal = 'latest'}) async {
-    setState(() {
-      loading = true;
-      error = false;
-    });
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadForums({int page = 1, bool reset = true}) async {
+    if (reset) {
+      setState(() {
+        _isLoading = true;
+        _hasError = false;
+        _currentPage = page;
+      });
+    }
 
     try {
-      final uri = Uri.parse('$baseUrl/forums/api/json/').replace(queryParameters: {
-        'page': p.toString(),
-        'q': q,
-        'filter': filterVal,
-        'page_size': '9',
-      });
-      final resp = await http.get(uri, headers: defaultHeaders());
-      if (resp.statusCode != 200) throw Exception('Failed');
-
-      final decoded = jsonDecode(resp.body) as Map<String, dynamic>;
-      final results = (decoded['results'] as List<dynamic>).map((e) => ForumResult.fromJson(e as Map<String, dynamic>)).toList();
+      final response = await _apiService.getForums(
+        page: page,
+        search: _searchQuery,
+        filter: _filter,
+      );
 
       setState(() {
-        forums = results;
-        page = p;
-        totalPages = decoded['num_pages'] ?? 1;
+        if (reset) {
+          _forums = response.results;
+        } else {
+          _forums.addAll(response.results);
+        }
+        _totalPages = response.numPages;
+        _isLoading = false;
       });
     } catch (e) {
-      debugPrint('fetch forums error: $e');
       setState(() {
-        error = true;
+        _isLoading = false;
+        _hasError = true;
       });
-    } finally {
-      setState(() {
-        loading = false;
-      });
+      _showErrorSnackbar('Failed to load forums: ${e.toString()}');
     }
   }
 
-  Widget _buildCard(ForumResult f) {
-    final author = f.user?.username ?? 'Anonymous';
-    final created = DateFormat.yMMMd().format(f.createdAt);
+  void _showErrorSnackbar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
 
-    return GestureDetector(
-      onTap: () => Navigator.of(context).push(MaterialPageRoute(
-        builder: (_) => ForumDetailPage(forumId: f.forumsId),
-      )),
-      child: Card(
-        elevation: 3,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+  void _onSearch() {
+    setState(() {
+      _searchQuery = _searchController.text.trim();
+    });
+    _loadForums();
+  }
+
+  void _onFilterChanged(String? value) {
+    if (value != null && value != _filter) {
+      setState(() {
+        _filter = value;
+      });
+      _loadForums();
+    }
+  }
+
+  void _onPageChanged(int page) {
+    if (page != _currentPage) {
+      _loadForums(page: page);
+      
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
+  Widget _buildPaginationControls() {
+    if (_totalPages <= 1) return const SizedBox();
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      color: Colors.grey[900],
+      child: Column(
+        children: [
+          // Page info
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Row(children: [
-                Expanded(
-                  child: Text(f.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w600)),
+              IconButton(
+                icon: const Icon(Icons.chevron_left, color: Colors.white),
+                onPressed: _currentPage > 1
+                    ? () => _onPageChanged(_currentPage - 1)
+                    : null,
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  'Page $_currentPage / $_totalPages',
+                  style: const TextStyle(color: Colors.white),
                 ),
-                if (f.isHot)
-                  Container(
-                    margin: const EdgeInsets.only(left: 8),
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(color: Colors.redAccent, borderRadius: BorderRadius.circular(8)),
-                    child: const Text('🔥 HOT', style: TextStyle(color: Colors.white, fontSize: 11)),
-                  )
-              ]),
-              const SizedBox(height: 8),
-              Text(author, style: TextStyle(color: Colors.grey[600], fontSize: 12)),
-              const Spacer(),
-              Text(f.content, maxLines: 3, overflow: TextOverflow.ellipsis),
-              const SizedBox(height: 10),
-              Row(children: [
-                Text(created, style: TextStyle(color: Colors.grey[500], fontSize: 12)),
-                const SizedBox(width: 8),
-                const Text('•'),
-                const SizedBox(width: 8),
-                Text('${f.forumsViews} views', style: TextStyle(color: Colors.grey[500], fontSize: 12)),
-                const SizedBox(width: 8),
-                const Text('•'),
-                const SizedBox(width: 8),
-                Text('${f.forumsRepliesCounts} replies', style: TextStyle(color: Colors.grey[500], fontSize: 12)),
-                const Spacer(),
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).push(MaterialPageRoute(builder: (_) => ForumDetailPage(forumId: f.forumsId)));
-                  },
-                  child: const Text('Read more →'),
-                ),
-              ])
+              ),
+              IconButton(
+                icon: const Icon(Icons.chevron_right, color: Colors.white),
+                onPressed: _currentPage < _totalPages
+                    ? () => _onPageChanged(_currentPage + 1)
+                    : null,
+              ),
             ],
           ),
-        ),
+          const SizedBox(height: 8),
+          // Page numbers
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(
+                _totalPages,
+                (index) {
+                  final pageNumber = index + 1;
+                  return Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 2),
+                    child: ElevatedButton(
+                      onPressed: () => _onPageChanged(pageNumber),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _currentPage == pageNumber
+                            ? Colors.red[700]
+                            : Colors.grey[800],
+                        minimumSize: const Size(40, 40),
+                        padding: EdgeInsets.zero,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: Text(
+                        '$pageNumber',
+                        style: TextStyle(
+                          color: _currentPage == pageNumber
+                              ? Colors.white
+                              : Colors.grey[300],
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
       ),
-    );
-  }
-
-  Widget _buildGrid() {
-    if (loading) return const Center(child: CircularProgressIndicator());
-    if (error) return Center(child: Text('Failed to load forums', style: TextStyle(color: Colors.red[400])));
-    if (forums.isEmpty) return Center(child: Text('No discussion found'));
-
-    return GridView.builder(
-      padding: const EdgeInsets.all(12),
-      itemCount: forums.length,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 0.82,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-      ),
-      itemBuilder: (_, i) => _buildCard(forums[i]),
-    );
-  }
-
-  Widget _buildPagination() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        IconButton(onPressed: page > 1 ? () => _fetchForums(p: page - 1, q: query, filterVal: filter) : null, icon: const Icon(Icons.chevron_left)),
-        Text('Page $page / $totalPages'),
-        IconButton(onPressed: page < totalPages ? () => _fetchForums(p: page + 1, q: query, filterVal: filter) : null, icon: const Icon(Icons.chevron_right)),
-      ],
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.black,
       appBar: AppBar(
-        title: const Text('Forums'),
+        title: const Text('PitTalk Forums'),
+        backgroundColor: Colors.grey[900],
         actions: [
           IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ForumFormPage())),
-          )
+            icon: const Icon(Icons.refresh),
+            onPressed: () => _loadForums(),
+          ),
         ],
       ),
       body: Column(
         children: [
-          Padding(
+          // Search and Filter
+          Container(
+            color: Colors.grey[900],
             padding: const EdgeInsets.all(12),
-            child: Row(children: [
-              Expanded(
-                child: TextField(
-                  controller: _searchController,
-                  decoration: const InputDecoration(hintText: 'Search discussion...', border: OutlineInputBorder()),
-                  onSubmitted: (v) {
-                    query = v.trim();
-                    _fetchForums(p: 1, q: query, filterVal: filter);
-                  },
+            child: Column(
+              children: [
+                // Search Bar
+                Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[800],
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: _searchController,
+                                decoration: const InputDecoration(
+                                  hintText: 'Find discussion...',
+                                  hintStyle: TextStyle(color: Colors.grey),
+                                  border: InputBorder.none,
+                                  contentPadding: EdgeInsets.only(
+                                    left: 16,
+                                    right: 8,
+                                    bottom: 12,
+                                  ),
+                                ),
+                                style: const TextStyle(color: Colors.white),
+                                onSubmitted: (_) => _onSearch(),
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.search, color: Colors.grey),
+                              onPressed: _onSearch,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(width: 8),
-              ElevatedButton(
-                onPressed: () {
-                  query = _searchController.text.trim();
-                  _fetchForums(p: 1, q: query, filterVal: filter);
-                },
-                child: const Text('Search'),
-              )
-            ]),
+                const SizedBox(height: 12),
+                // Filter
+                Row(
+                  children: [
+                    const Text(
+                      'Filter by:',
+                      style: TextStyle(color: Colors.white, fontSize: 14),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Container(
+                        height: 40,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[800],
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: _filter,
+                            dropdownColor: Colors.grey[900],
+                            icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
+                            style: const TextStyle(color: Colors.white, fontSize: 14),
+                            onChanged: _onFilterChanged,
+                            items: const [
+                              DropdownMenuItem(
+                                value: 'latest',
+                                child: Text('Latest'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'oldest',
+                                child: Text('Oldest'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'popular',
+                                child: Text('Popular'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'hot',
+                                child: Text('Hot'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Row(children: [
-              const Text('Filter by:'),
-              const SizedBox(width: 8),
-              DropdownButton<String>(
-                value: filter,
-                items: const [
-                  DropdownMenuItem(value: 'latest', child: Text('Latest')),
-                  DropdownMenuItem(value: 'oldest', child: Text('Oldest')),
-                  DropdownMenuItem(value: 'popular', child: Text('Popular')),
-                  DropdownMenuItem(value: 'hot', child: Text('Hot')),
-                ],
-                onChanged: (v) {
-                  if (v == null) return;
-                  filter = v;
-                  _fetchForums(p: 1, q: query, filterVal: filter);
-                },
-              ),
-              const Spacer(),
-              _buildPagination(),
-            ]),
+
+          // Loading/Error/Content
+          Expanded(
+            child: _buildContent(),
           ),
-          Expanded(child: _buildGrid()),
+
+          // Pagination Controls
+          _buildPaginationControls(),
         ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const ForumFormPage(),
+            ),
+          );
+          if (result == true) {
+            _loadForums();
+          }
+        },
+        backgroundColor: Colors.red[700],
+        child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }
-}
 
+  Widget _buildContent() {
+    if (_isLoading && _forums.isEmpty) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
+
+    if (_hasError && _forums.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, color: Colors.red, size: 48),
+            const SizedBox(height: 16),
+            const Text(
+              'Failed to load forums.',
+              style: TextStyle(color: Colors.white, fontSize: 16),
+            ),
+            const SizedBox(height: 8),
+            ElevatedButton(
+              onPressed: () => _loadForums(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red[700],
+              ),
+              child: const Text('Try again'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_forums.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.forum_outlined, color: Colors.grey, size: 64),
+            const SizedBox(height: 16),
+            const Text(
+              'No discussions yet.',
+              style: TextStyle(color: Colors.grey, fontSize: 18),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Be the first to post a discussion!',
+              style: TextStyle(color: Colors.grey, fontSize: 14),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      controller: _scrollController,
+      padding: const EdgeInsets.all(8),
+      itemCount: _forums.length,
+      itemBuilder: (context, index) {
+        final forum = _forums[index];
+        return ForumCard(
+          forum: forum,
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ForumDetailPage(forumId: forum.id),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}
