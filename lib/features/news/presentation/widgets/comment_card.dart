@@ -99,7 +99,7 @@ class CommentCard extends StatelessWidget {
 
                         // If user continues
                         final response = await request.postJson(
-                          "http://localhost:8000/news/comment/${comment.id}/delete-flutter/",
+                          "https://ammar-muhammad41-pittalk.pbp.cs.ui.ac.id/news/comment/${comment.id}/delete-flutter/",
                           jsonEncode({})
                         );
 

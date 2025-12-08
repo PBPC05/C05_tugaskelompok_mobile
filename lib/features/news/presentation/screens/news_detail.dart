@@ -34,7 +34,7 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
     final request = context.read<CookieRequest>();
 
     final response = await request.get(
-      "http://localhost:8000/news/json/${_news.id}",
+      "https://ammar-muhammad41-pittalk.pbp.cs.ui.ac.id/news/json/${_news.id}",
     );
 
     setState(() => _news = News.fromJson(response));
@@ -62,7 +62,7 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
     final request = context.read<CookieRequest>();
     try {
       await request.post(
-        "http://localhost:8000/news/${_news.id}/increment-views/",
+        "https://ammar-muhammad41-pittalk.pbp.cs.ui.ac.id/news/${_news.id}/increment-views/",
         {},
       );
 
@@ -77,7 +77,7 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
 
     try {
       final res = await request.get(
-        "http://localhost:8000/news/json/${_news.id}/comments",
+        "https://ammar-muhammad41-pittalk.pbp.cs.ui.ac.id/news/json/${_news.id}/comments",
       );
       setState(() {
         _comments = (res as List)
@@ -103,7 +103,7 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
     }
 
     final response = await request.postJson(
-      "http://localhost:8000/news/${_news.id}/comment-flutter/",
+      "https://ammar-muhammad41-pittalk.pbp.cs.ui.ac.id/news/${_news.id}/comment-flutter/",
       jsonEncode({'content': content}),
     );
 

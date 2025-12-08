@@ -211,7 +211,7 @@ class _NewsFormPageState extends State<NewsFormPage> {
                     if (_formKey.currentState!.validate()) {
                       // Post news to Django
                       final response = await request.postJson(
-                        "http://localhost:8000/news/create-flutter/",
+                        "https://ammar-muhammad41-pittalk.pbp.cs.ui.ac.id/news/create-flutter/",
                         jsonEncode({
                           "title": _title,
                           "content": _content,
