@@ -16,6 +16,8 @@ class _PredictionPageState extends State<PredictionPage> {
   String nextRaceDisplay = "Loading...";
   Map<String, int> driverVotes = {};
   Map<String, int> teamVotes = {};
+  bool userLoggedIn = false;
+  bool userIsAdmin = false;
 
   final List<Color> chartColors = [
     Colors.red,
@@ -33,6 +35,38 @@ class _PredictionPageState extends State<PredictionPage> {
     super.initState();
     loadNextRace();
     getVotes();
+    checkUserLogin();
+  }
+
+  // Check if user is authenticated (and if user is admin)
+  void checkUserLogin() async {
+    final request = context.read<CookieRequest>();
+    try {
+      final request1 = await request.get(
+        "https://ammar-muhammad41-pittalk.pbp.cs.ui.ac.id/prediction/check_user",
+      );
+      var login = request1['is_logged_in'];
+      var admin = false;
+
+      if (login) {
+        final request2 = await request.get(
+          "https://ammar-muhammad41-pittalk.pbp.cs.ui.ac.id/prediction/check_admin",
+        );
+        if (request2['is_admin']) {
+          admin = true;
+        }
+      }
+
+      setState(() {
+        userLoggedIn = login;
+        userIsAdmin = admin;
+      });
+    } on Exception {
+      setState(() {
+        userLoggedIn = false;
+        userIsAdmin = false;
+      });
+    }
   }
 
   // Get next race data
@@ -143,51 +177,53 @@ class _PredictionPageState extends State<PredictionPage> {
                   const SizedBox(height: 12),
 
                   // Clear votes button for admins
-                  ElevatedButton(
-                    onPressed: () async {
-                      final confirm = await showDialog<bool>(
-                        context: context,
-                        builder: (context) {
-                          return AlertDialog(
-                            title: const Text("Confirm Clear"),
-                            content: const Text(
-                              "Are you sure you want to clear all votes for this race? This action cannot be undone!",
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context, false),
-                                child: const Text("Cancel"),
+                  if (userIsAdmin)
+                    ElevatedButton(
+                      onPressed: () async {
+                        final confirm = await showDialog<bool>(
+                          context: context,
+                          builder: (context) {
+                            return AlertDialog(
+                              title: const Text("Confirm Clear"),
+                              content: const Text(
+                                "Are you sure you want to clear all votes for this race? This action cannot be undone!",
                               ),
-                              TextButton(
-                                onPressed: () => Navigator.pop(context, true),
-                                child: const Text(
-                                  "Clear",
-                                  style: TextStyle(color: Colors.red),
+                              actions: [
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.pop(context, false),
+                                  child: const Text("Cancel"),
                                 ),
-                              ),
-                            ],
-                          );
-                        },
-                      );
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context, true),
+                                  child: const Text(
+                                    "Clear",
+                                    style: TextStyle(color: Colors.red),
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        );
 
-                      if (confirm != true) return;
+                        if (confirm != true) return;
 
-                      final response = await request.post(
-                        "https://ammar-muhammad41-pittalk.pbp.cs.ui.ac.id/prediction/clear_votes_flutter",
-                        "",
-                      );
+                        final response = await request.post(
+                          "https://ammar-muhammad41-pittalk.pbp.cs.ui.ac.id/prediction/clear_votes_flutter",
+                          "",
+                        );
 
-                      if (context.mounted) {
-                        if (response['status'] == 'ok') {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text("Votes cleared!")),
-                          );
-                          context.pop(true);
+                        if (context.mounted) {
+                          if (response['status'] == 'ok') {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text("Votes cleared!")),
+                            );
+                            context.pop(true);
+                          }
                         }
-                      }
-                    },
-                    child: const Text("Clear Votes"),
-                  ),
+                      },
+                      child: const Text("Clear Votes"),
+                    ),
                 ],
               ),
             ),
@@ -321,26 +357,65 @@ class _PredictionPageState extends State<PredictionPage> {
             ),
 
             // Vote button
-            Container(
-              margin: const EdgeInsets.symmetric(
-                vertical: 32.0,
-                horizontal: 16.0,
-              ),
-              height: 100,
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () async {
-                  final updated = await context.push(
-                    '/prediction/vote/',
-                    extra: nextRaceDisplay,
-                  );
+            userLoggedIn
+                ? Container(
+                    margin: const EdgeInsets.symmetric(
+                      vertical: 32.0,
+                      horizontal: 16.0,
+                    ),
+                    height: 100,
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        final updated = await context.push(
+                          '/prediction/vote/',
+                          extra: nextRaceDisplay,
+                        );
 
-                  if (updated == true) getVotes();
-                },
-                child: const Text("Vote Now", style: TextStyle(fontSize: 24.0)),
-              ),
-            ),
-
+                        if (updated == true) getVotes();
+                      },
+                      child: const Text(
+                        "Vote Now",
+                        style: TextStyle(fontSize: 24.0),
+                      ),
+                    ),
+                  )
+                : Container(
+                    margin: const EdgeInsets.symmetric(
+                      vertical: 16.0,
+                      horizontal: 12.0,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border.all(color: Colors.black, width: 2.0),
+                      borderRadius: BorderRadius.circular(5.0),
+                    ),
+                    padding: const EdgeInsets.all(8.0),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: Column(
+                        children: [
+                          const Text(
+                            "Please log in or register to vote.",
+                            style: TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold, color: Colors.black),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 12.0,),
+                          ElevatedButton(
+                            onPressed: () {
+                              context.push("/login");
+                            },
+                            child: const Padding(
+                              padding: EdgeInsets.all(8.0),
+                              child: Text(
+                                "Log In",
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
             const Divider(height: 64),
           ],
         ),
