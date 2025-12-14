@@ -10,12 +10,16 @@ class NewsCard extends StatelessWidget {
   final News news;
   final VoidCallback onTap;
   final Function(bool updated)? editResult;
+  final bool userLoggedIn;
+  final bool userIsAdmin;
 
   const NewsCard({
     super.key,
     required this.news,
     required this.onTap,
     required this.editResult,
+    this.userLoggedIn = false,
+    this.userIsAdmin = false
   });
 
   String _formatDate(DateTime date) {
@@ -180,6 +184,7 @@ class NewsCard extends StatelessWidget {
                 const SizedBox(height: 6),
 
                 // Edit and delete buttons
+                if (userLoggedIn && userIsAdmin)
                 Row(
                   children: [
                     TextButton(
