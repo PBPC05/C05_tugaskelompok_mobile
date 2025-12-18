@@ -10,12 +10,16 @@ class NewsCard extends StatelessWidget {
   final News news;
   final VoidCallback onTap;
   final Function(bool updated)? editResult;
+  final bool userLoggedIn;
+  final bool userIsAdmin;
 
   const NewsCard({
     super.key,
     required this.news,
     required this.onTap,
     required this.editResult,
+    this.userLoggedIn = false,
+    this.userIsAdmin = false
   });
 
   String _formatDate(DateTime date) {
@@ -180,6 +184,7 @@ class NewsCard extends StatelessWidget {
                 const SizedBox(height: 6),
 
                 // Edit and delete buttons
+                if (userLoggedIn && userIsAdmin)
                 Row(
                   children: [
                     TextButton(
@@ -229,7 +234,7 @@ class NewsCard extends StatelessWidget {
 
                         // If user continues
                         final response = await request.postJson(
-                          "http://localhost:8000/news/${news.id}/delete-flutter/",
+                          "https://ammar-muhammad41-pittalk.pbp.cs.ui.ac.id/news/${news.id}/delete-flutter/",
                           jsonEncode({})
                         );
 
