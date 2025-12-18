@@ -32,8 +32,8 @@ class _MobileSidebarWrapperState extends State<MobileSidebarWrapper> {
           ),
 
         Positioned(
-          bottom: 20,
-          left: 20,
+          bottom: 28,
+          left: 28,
           child: AnimatedScale(
             scale: open ? 0.9 : 1.0,
             duration: const Duration(milliseconds: 200),

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:pittalk_mobile/features/forums/data/forums_api.dart';
 import 'package:pittalk_mobile/features/forums/data/forums_model.dart';
 import 'package:pittalk_mobile/features/forums/presentation/screens/forums_detail.dart';
@@ -13,7 +15,6 @@ class ForumListPage extends StatefulWidget {
 }
 
 class _ForumListPageState extends State<ForumListPage> {
-  final ForumsApiService _apiService = ForumsApiService();
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
@@ -28,7 +29,7 @@ class _ForumListPageState extends State<ForumListPage> {
   @override
   void initState() {
     super.initState();
-    _loadForums();
+    // Load forums will be triggered when we have access to CookieRequest
   }
 
   @override
@@ -39,6 +40,9 @@ class _ForumListPageState extends State<ForumListPage> {
   }
 
   Future<void> _loadForums({int page = 1, bool reset = true}) async {
+    final request = Provider.of<CookieRequest>(context, listen: false);
+    final apiService = ForumsApiService();
+
     if (reset) {
       setState(() {
         _isLoading = true;
@@ -48,7 +52,8 @@ class _ForumListPageState extends State<ForumListPage> {
     }
 
     try {
-      final response = await _apiService.getForums(
+      final response = await apiService.getForums(
+        request: request,
         page: page,
         search: _searchQuery,
         filter: _filter,
@@ -70,6 +75,46 @@ class _ForumListPageState extends State<ForumListPage> {
       });
       _showErrorSnackbar('Failed to load forums: ${e.toString()}');
     }
+  }
+
+  List<int?> _generatePageWindow({
+    required int currentPage,
+    required int totalPages,
+    int windowSize = 5,
+  }) {
+    if (totalPages <= 1) return [1];
+
+    List<int?> pages = [];
+
+    pages.add(1); // always show first page
+
+    int start = currentPage - (windowSize ~/ 2);
+    int end = currentPage + (windowSize ~/ 2);
+
+    if (start < 2) {
+      end += (2 - start);
+      start = 2;
+    }
+
+    if (end > totalPages - 1) {
+      start -= (end - (totalPages - 1));
+      end = totalPages - 1;
+    }
+
+    start = start.clamp(2, totalPages - 1);
+    end = end.clamp(2, totalPages - 1);
+
+    if (start > 2) pages.add(null);
+
+    for (int i = start; i <= end; i++) {
+      pages.add(i);
+    }
+
+    if (end < totalPages - 1) pages.add(null);
+
+    pages.add(totalPages);
+
+    return pages;
   }
 
   void _showErrorSnackbar(String message) {
@@ -113,73 +158,67 @@ class _ForumListPageState extends State<ForumListPage> {
   Widget _buildPaginationControls() {
     if (_totalPages <= 1) return const SizedBox();
 
+    final pages = _generatePageWindow(
+      currentPage: _currentPage,
+      totalPages: _totalPages,
+    );
+
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-      color: Colors.grey[900],
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 18),
+      decoration: BoxDecoration(
+        color: Colors.black,
+        border: Border(
+          top: BorderSide(color: Colors.grey.shade800),
+        ),
+      ),
       child: Column(
         children: [
-          // Page info
+          // === PAGE INFO + CHEVRONS ===
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              IconButton(
-                icon: const Icon(Icons.chevron_left, color: Colors.white),
-                onPressed: _currentPage > 1
-                    ? () => _onPageChanged(_currentPage - 1)
-                    : null,
+              _navButton(
+                icon: Icons.chevron_left,
+                enabled: _currentPage > 1,
+                onTap: () => _onPageChanged(_currentPage - 1),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Text(
-                  'Page $_currentPage / $_totalPages',
-                  style: const TextStyle(color: Colors.white),
-                ),
+              const SizedBox(width: 8),
+              Text(
+                "Page $_currentPage / $_totalPages",
+                style: const TextStyle(color: Colors.white70, fontSize: 14),
               ),
-              IconButton(
-                icon: const Icon(Icons.chevron_right, color: Colors.white),
-                onPressed: _currentPage < _totalPages
-                    ? () => _onPageChanged(_currentPage + 1)
-                    : null,
+              const SizedBox(width: 8),
+              _navButton(
+                icon: Icons.chevron_right,
+                enabled: _currentPage < _totalPages,
+                onTap: () => _onPageChanged(_currentPage + 1),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          // Page numbers
+
+          const SizedBox(height: 12),
+
+          // === PAGE NUMBERS (MODERN STYLE) ===
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(
-                _totalPages,
-                (index) {
-                  final pageNumber = index + 1;
-                  return Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 2),
-                    child: ElevatedButton(
-                      onPressed: () => _onPageChanged(pageNumber),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _currentPage == pageNumber
-                            ? Colors.red[700]
-                            : Colors.grey[800],
-                        minimumSize: const Size(40, 40),
-                        padding: EdgeInsets.zero,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      child: Text(
-                        '$pageNumber',
-                        style: TextStyle(
-                          color: _currentPage == pageNumber
-                              ? Colors.white
-                              : Colors.grey[300],
-                          fontSize: 14,
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
+              children: [
+                for (final page in pages)
+                  page == null
+                      ? Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          child: Text(
+                            "...",
+                            style: TextStyle(
+                              color: Colors.grey.shade500,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        )
+                      : _pageBubble(page),
+              ],
             ),
           ),
         ],
@@ -187,8 +226,73 @@ class _ForumListPageState extends State<ForumListPage> {
     );
   }
 
+  Widget _navButton({
+    required IconData icon,
+    required bool enabled,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: enabled ? onTap : null,
+      child: Container(
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: enabled ? Colors.grey[850] : Colors.grey[900],
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: Colors.grey.shade700,
+            width: 1,
+          ),
+        ),
+        child: Icon(
+          icon,
+          color: enabled ? Colors.white : Colors.grey[700],
+          size: 18,
+        ),
+      ),
+    );
+  }
+
+  Widget _pageBubble(int page) {
+    final bool active = page == _currentPage;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 3),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: () => _onPageChanged(page),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: active ? Colors.red[700] : Colors.grey[850],
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: active ? Colors.red.shade300 : Colors.grey.shade700,
+              width: active ? 1.2 : 1,
+            ),
+          ),
+          child: Text(
+            "$page",
+            style: TextStyle(
+              color: active ? Colors.white : Colors.grey[300],
+              fontWeight: active ? FontWeight.w600 : FontWeight.w500,
+              fontSize: 13,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Load forums when widget is first built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_forums.isEmpty && !_isLoading && !_hasError) {
+        _loadForums();
+      }
+    });
+
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -285,10 +389,6 @@ class _ForumListPageState extends State<ForumListPage> {
                                 value: 'popular',
                                 child: Text('Popular'),
                               ),
-                              DropdownMenuItem(
-                                value: 'hot',
-                                child: Text('Hot'),
-                              ),
                             ],
                           ),
                         ),
@@ -309,20 +409,27 @@ class _ForumListPageState extends State<ForumListPage> {
           _buildPaginationControls(),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          final result = await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const ForumFormPage(),
+      floatingActionButton: Consumer<CookieRequest>(
+        builder: (context, request, child) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12, right: 12),
+            child: FloatingActionButton(
+              onPressed: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ForumFormPage(request: request),
+                  ),
+                );
+                if (result == true) {
+                  _loadForums();
+                }
+              },
+              backgroundColor: Colors.red[700],
+              child: const Icon(Icons.add, color: Colors.white),
             ),
           );
-          if (result == true) {
-            _loadForums();
-          }
         },
-        backgroundColor: Colors.red[700],
-        child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }
@@ -388,10 +495,14 @@ class _ForumListPageState extends State<ForumListPage> {
         return ForumCard(
           forum: forum,
           onTap: () {
+            final request = Provider.of<CookieRequest>(context, listen: false);
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => ForumDetailPage(forumId: forum.id),
+                builder: (context) => ForumDetailPage(
+                  forumId: forum.id,
+                  request: request,
+                ),
               ),
             );
           },

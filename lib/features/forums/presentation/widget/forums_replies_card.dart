@@ -5,15 +5,168 @@ class ForumsRepliesCard extends StatelessWidget {
   final ForumReply reply;
   final VoidCallback onLike;
   final VoidCallback onDelete;
+  final bool isAdmin;
+  final bool isLoggedIn;
 
   const ForumsRepliesCard({
     Key? key,
     required this.reply,
     required this.onLike,
     required this.onDelete,
+    this.isAdmin = false,
+    this.isLoggedIn = false,
   }) : super(key: key);
 
-  String _formatTimeAgo(DateTime date) {
+  @override
+  Widget build(BuildContext context) {
+    final canDelete = isAdmin || reply.isOwner || reply.isForumOwner;
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      color: Colors.grey[900],
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header with username and time
+            Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: Colors.grey[700],
+                  radius: 16,
+                  child: Text(
+                    reply.username[0].toUpperCase(),
+                    style: const TextStyle(color: Colors.white, fontSize: 12),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        reply.username,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        _formatTime(reply.createdAt),
+                        style: TextStyle(
+                          color: Colors.grey[400],
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Badges for owner/forum owner
+                if (reply.isOwner)
+                  _buildBadge('Owner', Colors.blue[800]!),
+                if (reply.isForumOwner && !reply.isOwner)
+                  _buildBadge('OP', Colors.green[800]!),
+              ],
+            ),
+            const SizedBox(height: 12),
+            
+            // Content
+            Text(
+              reply.content,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 16),
+            
+            // Actions
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Like button
+                InkWell(
+                  onTap: isLoggedIn ? onLike : () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Please login to like replies'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  },
+                  child: Row(
+                    children: [
+                      Icon(
+                        reply.userHasLiked ? Icons.thumb_up : Icons.thumb_up_alt_outlined,
+                        color: reply.userHasLiked ? Colors.red[400] : Colors.grey[400],
+                        size: 18,
+                      ),
+                      const SizedBox(width: 4.0),
+                      Text(
+                        '${reply.likes}',
+                        style: TextStyle(
+                          color: reply.userHasLiked ? Colors.red[400] : Colors.grey[400],
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // Delete button (only show if user has permission)
+                if (canDelete)
+                  InkWell(
+                    onTap: isLoggedIn ? onDelete : () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Please login to delete replies'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    },
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete, color: Colors.red[400], size: 18),
+                        const SizedBox(width: 4.0),
+                        Text(
+                          'Delete',
+                          style: TextStyle(
+                            color: Colors.red[400],
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBadge(String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  String _formatTime(DateTime date) {
     final now = DateTime.now();
     final difference = now.difference(date);
 
@@ -21,122 +174,6 @@ class ForumsRepliesCard extends StatelessWidget {
     if (difference.inMinutes < 60) return '${difference.inMinutes}m ago';
     if (difference.inHours < 24) return '${difference.inHours}h ago';
     if (difference.inDays < 7) return '${difference.inDays}d ago';
-    if (difference.inDays < 30) return '${difference.inDays ~/ 7}w ago';
-    if (difference.inDays < 365) return '${difference.inDays ~/ 30}mo ago';
-    return '${difference.inDays ~/ 365}y ago';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12.0),
-      padding: const EdgeInsets.all(12.0),
-      decoration: BoxDecoration(
-        color: Colors.grey[900],
-        borderRadius: BorderRadius.circular(12.0),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header with avatar and username
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              CircleAvatar(
-                backgroundColor: Colors.grey[700],
-                radius: 20,
-                child: Text(
-                  reply.username![0].toUpperCase(),
-                  style: const TextStyle(color: Colors.white),
-                ),
-              ),
-              const SizedBox(width: 12.0),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      reply.username!,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      _formatTimeAgo(reply.createdAt),
-                      style: TextStyle(
-                        color: Colors.grey[400],
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12.0),
-
-          // Content
-          Text(
-            reply.content,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-            ),
-          ),
-          const SizedBox(height: 12.0),
-
-          // Actions
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              // Like Button
-              InkWell(
-                onTap: onLike,
-                child: Row(
-                  children: [
-                    Icon(
-                      reply.userHasLiked
-                          ? Icons.favorite
-                          : Icons.favorite_border,
-                      color: reply.userHasLiked ? Colors.red : Colors.grey,
-                      size: 18,
-                    ),
-                    const SizedBox(width: 4.0),
-                    Text(
-                      '${reply.likes}',
-                      style: TextStyle(
-                        color: Colors.grey[400],
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 16.0),
-
-              // Delete Button (if owner)
-              if (reply.isOwner || reply.isForumOwner)
-                InkWell(
-                  onTap: onDelete,
-                  child: Row(
-                    children: [
-                      Icon(Icons.delete, color: Colors.red[400], size: 18),
-                      const SizedBox(width: 4.0),
-                      Text(
-                        'Delete',
-                        style: TextStyle(
-                          color: Colors.red[400],
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-            ],
-          ),
-        ],
-      ),
-    );
+    return '${date.day}/${date.month}/${date.year}';
   }
 }

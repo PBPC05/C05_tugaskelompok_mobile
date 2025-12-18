@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:pittalk_mobile/features/forums/data/forums_api.dart';
 import 'package:pittalk_mobile/features/forums/data/forums_model.dart';
 
 class ForumFormPage extends StatefulWidget {
+  final CookieRequest request;
   final Forum? forum;
   final bool isEdit;
 
   const ForumFormPage({
     Key? key,
+    required this.request,
     this.forum,
     this.isEdit = false,
   }) : super(key: key);
@@ -17,7 +21,6 @@ class ForumFormPage extends StatefulWidget {
 }
 
 class _ForumFormPageState extends State<ForumFormPage> {
-  final ForumsApiService _apiService = ForumsApiService();
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _contentController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
@@ -47,17 +50,23 @@ class _ForumFormPageState extends State<ForumFormPage> {
     });
 
     try {
+      final apiService = ForumsApiService();
+      
       if (widget.isEdit && widget.forum != null) {
-        await _apiService.updateForum(
-          widget.forum!.id,
-          _titleController.text.trim(),
-          _contentController.text.trim(),
+        final updatedForum = await apiService.updateForum(
+          request: widget.request,
+          id: widget.forum!.id,
+          title: _titleController.text.trim(),
+          content: _contentController.text.trim(),
         );
+        print('Forum updated: ${updatedForum.title}');
       } else {
-        await _apiService.createForum(
-          _titleController.text.trim(),
-          _contentController.text.trim(),
+        final newForum = await apiService.createForum(
+          request: widget.request,
+          title: _titleController.text.trim(),
+          content: _contentController.text.trim(),
         );
+        print('Forum created: ${newForum.id}');
       }
 
       Navigator.pop(context, true);
@@ -66,6 +75,7 @@ class _ForumFormPageState extends State<ForumFormPage> {
         _isSubmitting = false;
       });
       _showErrorSnackbar('Failed to save forum: ${e.toString()}');
+      print('Error: $e');
     }
   }
 
@@ -157,7 +167,7 @@ class _ForumFormPageState extends State<ForumFormPage> {
                 children: [
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () => Navigator.pop(context),
+                      onPressed: _isSubmitting ? null : () => Navigator.pop(context),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.grey[700],
                         foregroundColor: Colors.white,

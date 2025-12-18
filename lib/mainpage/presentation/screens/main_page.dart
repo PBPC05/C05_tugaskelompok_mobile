@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:pittalk_mobile/features/forums/presentation/screens/forums_detail.dart';
 import 'package:pittalk_mobile/mainpage/data/mainpage_api.dart';
+import 'package:provider/provider.dart';
 
 import '../widgets/sidebar.dart';
 import '../widgets/mobile_sidebar_wrapper.dart';
@@ -186,10 +188,11 @@ class _ForumsSection extends StatelessWidget {
                 date: f.createdAt.toString(),
                 replies: f.repliesCount,
                 onTap: () {
+                  final request = Provider.of<CookieRequest>(context, listen: false);
                   Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => ForumDetailPage(forumId: f.id),
+                    builder: (context) => ForumDetailPage(forumId: f.id, request: request),
                   ),
                 );
                 },

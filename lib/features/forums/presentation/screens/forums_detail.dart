@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:pittalk_mobile/features/forums/data/forums_api.dart';
 import 'package:pittalk_mobile/features/forums/data/forums_model.dart';
 import 'package:pittalk_mobile/features/forums/data/forums_replies_model.dart';
@@ -7,15 +9,19 @@ import 'package:pittalk_mobile/features/forums/presentation/widget/forums_replie
 
 class ForumDetailPage extends StatefulWidget {
   final String forumId;
+  final CookieRequest request;
 
-  const ForumDetailPage({Key? key, required this.forumId}) : super(key: key);
+  const ForumDetailPage({
+    Key? key,
+    required this.forumId,
+    required this.request,
+  }) : super(key: key);
 
   @override
   _ForumDetailPageState createState() => _ForumDetailPageState();
 }
 
 class _ForumDetailPageState extends State<ForumDetailPage> {
-  final ForumsApiService _apiService = ForumsApiService();
   final TextEditingController _replyController = TextEditingController();
   final _replyFocusNode = FocusNode();
 
@@ -23,15 +29,21 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
   List<ForumReply> _replies = [];
   bool _isLoading = true;
   bool _isPostingReply = false;
-  int _currentReplyPage = 1;
-  int _totalReplyPages = 1;
   bool _isLoadingReplies = false;
   bool _hasError = false;
+  
+  // User states
+  bool _isLoggedIn = false;
+  bool _isAdmin = false;
+  bool _isOwner = false;
+  String? _currentUsername;
+  int? _currentUserId;
 
   @override
   void initState() {
     super.initState();
     _loadForumData();
+    _checkUserStatus();
   }
 
   @override
@@ -41,6 +53,64 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
     super.dispose();
   }
 
+  Future<void> _checkUserStatus() async {
+    try {
+      final apiService = ForumsApiService();
+      
+      // Get user profile
+      final userData = await apiService.getUserProfile(
+        request: widget.request,
+      );
+      
+      if (userData['is_logged_in'] == true) {
+        _isLoggedIn = true;
+        _currentUsername = userData['username'];
+        _currentUserId = userData['id'];
+        _isAdmin = (userData['is_staff'] ?? false) || (userData['is_superuser'] ?? false);
+        
+        // Also check admin status via check-admin endpoint for admin features
+        try {
+          final adminData = await apiService.checkAdmin(
+            request: widget.request,
+          );
+          _isAdmin = adminData['is_admin'] ?? _isAdmin;
+        } catch (e) {
+          print('Error checking admin status: $e');
+        }
+        
+        setState(() {});
+        
+        // Check ownership after loading forum
+        if (_forum != null) {
+          await _checkOwnership();
+        }
+      }
+    } catch (e) {
+      print('Error checking user status: $e');
+      _isLoggedIn = false;
+    }
+  }
+
+  Future<void> _checkOwnership() async {
+    if (_forum == null || !_isLoggedIn) return;
+    
+    try {
+      // Check by user ID (most reliable)
+      if (_currentUserId != null && _forum!.userId != null) {
+        _isOwner = _forum!.userId == _currentUserId.toString();
+      }
+      
+      // Check by username (fallback)
+      if (!_isOwner && _currentUsername != null && _forum!.username != null) {
+        _isOwner = _forum!.username!.toLowerCase() == _currentUsername!.toLowerCase();
+      }
+      
+      setState(() {});
+    } catch (e) {
+      print('Error checking ownership: $e');
+    }
+  }
+
   Future<void> _loadForumData() async {
     setState(() {
       _isLoading = true;
@@ -48,80 +118,85 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
     });
 
     try {
-      final forum = await _apiService.getForum(widget.forumId);
+      final apiService = ForumsApiService();
+      final forum = await apiService.getForum(
+        request: widget.request,
+        id: widget.forumId,
+      );
+      final replies = await apiService.getForumReplies(
+        request: widget.request,
+        forumId: widget.forumId,
+      );
+      
       setState(() {
         _forum = forum;
+        _replies = replies;
         _isLoading = false;
       });
-      _loadReplies();
+      
+      // Check ownership if user is already logged in
+      if (_isLoggedIn) {
+        await _checkOwnership();
+      }
     } catch (e) {
       setState(() {
         _isLoading = false;
         _hasError = true;
       });
       _showErrorSnackbar('Failed to load forum: ${e.toString()}');
-    }
-  }
-
-  Future<void> _loadReplies({int page = 1, bool reset = true}) async {
-    if (_forum == null) return;
-
-    setState(() {
-      _isLoadingReplies = true;
-    });
-
-    try {
-      final newReplies = await _apiService.loadMoreReplies(
-        _forum!.id,
-        reset ? 0 : _replies.length,
-      );
-
-      setState(() {
-        if (reset) {
-          _replies = newReplies;
-          _currentReplyPage = 1;
-        } else {
-          _replies.addAll(newReplies);
-          _currentReplyPage++;
-        }
-        _isLoadingReplies = false;
-      });
-    } catch (e) {
-      setState(() {
-        _isLoadingReplies = false;
-      });
-      _showErrorSnackbar('Failed to load replies: ${e.toString()}');
+      print('Error loading forum: $e');
     }
   }
 
   Future<void> _toggleLike() async {
     if (_forum == null) return;
+    
+    if (!_isLoggedIn) {
+      _showErrorSnackbar('Please login to like this forum');
+      return;
+    }
 
     try {
-      final result = await _apiService.toggleForumLike(_forum!.id);
+      final apiService = ForumsApiService();
+      final result = await apiService.toggleForumLike(
+        request: widget.request,
+        id: _forum!.id,
+      );
       setState(() {
         _forum = Forum.fromJson({
           ..._forum!.toJson(),
-          'forums_likes': result['forums_likes'],
-          'user_has_liked': result['user_has_liked'],
+          'likes': result['forums_likes'] ?? result['likes'] ?? _forum!.likes,
+          'user_has_liked': result['user_has_liked'] ?? false,
         });
       });
     } catch (e) {
-      _showErrorSnackbar('Failed to likes: ${e.toString()}');
+      _showErrorSnackbar('Failed to like: ${e.toString()}');
+      print('Error toggling like: $e');
     }
   }
 
   Future<void> _postReply() async {
-    if (_replyController.text.trim().isEmpty) return;
+    final content = _replyController.text.trim();
+    if (content.isEmpty) {
+      _showErrorSnackbar('Please enter a reply');
+      return;
+    }
+
+    if (!_isLoggedIn) {
+      _showErrorSnackbar('Please login to post a reply');
+      return;
+    }
 
     setState(() {
       _isPostingReply = true;
     });
 
     try {
-      final newReply = await _apiService.createReply(
-        widget.forumId,
-        _replyController.text.trim(),
+      final apiService = ForumsApiService();
+      final newReply = await apiService.createReply(
+        request: widget.request,
+        forumId: widget.forumId,
+        content: content,
       );
 
       setState(() {
@@ -130,13 +205,15 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
         if (_forum != null) {
           _forum = Forum.fromJson({
             ..._forum!.toJson(),
-            'forums_replies_counts': _forum!.repliesCount + 1,
+            'repliesCount': _forum!.repliesCount + 1,
           });
         }
       });
       _replyFocusNode.unfocus();
+      _showSuccessSnackbar('Reply posted successfully');
     } catch (e) {
-      _showErrorSnackbar('Failed to post replies: ${e.toString()}');
+      _showErrorSnackbar('Failed to post reply: ${e.toString()}');
+      print('Error posting reply: $e');
     } finally {
       setState(() {
         _isPostingReply = false;
@@ -145,29 +222,63 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
   }
 
   Future<void> _toggleReplyLike(int replyId) async {
+    if (!_isLoggedIn) {
+      _showErrorSnackbar('Please login to like replies');
+      return;
+    }
+
     try {
-      final result = await _apiService.toggleReplyLike(replyId);
+      final apiService = ForumsApiService();
+      final result = await apiService.toggleReplyLike(
+        request: widget.request,
+        replyId: replyId,
+      );
       setState(() {
         final index = _replies.indexWhere((r) => r.id == replyId);
         if (index != -1) {
           _replies[index] = ForumReply.fromJson({
             ..._replies[index].toJson(),
-            'likes': result['likes'],
-            'user_has_liked': result['user_has_liked'],
+            'likes': result['likes'] ?? 0,
+            'user_has_liked': result['user_has_liked'] ?? false,
           });
         }
       });
     } catch (e) {
-      _showErrorSnackbar('Failed to like replies: ${e.toString()}');
+      _showErrorSnackbar('Failed to like reply: ${e.toString()}');
+      print('Error toggling reply like: $e');
     }
   }
 
   Future<void> _deleteReply(int replyId) async {
+    if (!_isLoggedIn) {
+      _showErrorSnackbar('Please login to delete replies');
+      return;
+    }
+
+    // Check if user can delete this reply
+    final reply = _replies.firstWhere((r) => r.id == replyId, orElse: () => ForumReply(
+      id: 0,
+      username: '',
+      content: '',
+      likes: 0,
+      createdAt: DateTime.now(),
+      userHasLiked: false,
+      isOwner: false,
+      isForumOwner: false,
+    ));
+    
+    final canDelete = reply.isOwner || _isOwner || _isAdmin;
+    
+    if (!canDelete) {
+      _showErrorSnackbar('You are not authorized to delete this reply');
+      return;
+    }
+
     final confirmed = await showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete'),
-        content: const Text('Do you want to delete this reply?'),
+        title: const Text('Delete Reply'),
+        content: const Text('Are you sure you want to delete this reply?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -183,29 +294,46 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
 
     if (confirmed == true) {
       try {
-        await _apiService.deleteReply(replyId);
-        setState(() {
-          _replies.removeWhere((r) => r.id == replyId);
-          if (_forum != null) {
-            _forum = Forum.fromJson({
-              ..._forum!.toJson(),
-              'forums_replies_counts': _forum!.repliesCount - 1,
-            });
-          }
-        });
-        _showSuccessSnackbar('Reply deleted successfully');
+        final apiService = ForumsApiService();
+        final success = await apiService.deleteReply(
+          request: widget.request,
+          replyId: replyId,
+        );
+        if (success) {
+          setState(() {
+            _replies.removeWhere((r) => r.id == replyId);
+            if (_forum != null) {
+              _forum = Forum.fromJson({
+                ..._forum!.toJson(),
+                'repliesCount': _forum!.repliesCount - 1,
+              });
+            }
+          });
+          _showSuccessSnackbar('Reply deleted successfully');
+        }
       } catch (e) {
         _showErrorSnackbar('Failed to delete reply: ${e.toString()}');
+        print('Error deleting reply: $e');
       }
     }
   }
 
   Future<void> _deleteForum() async {
+    if (!_isLoggedIn) {
+      _showErrorSnackbar('Please login to delete forums');
+      return;
+    }
+
+    if (!_isOwner && !_isAdmin) {
+      _showErrorSnackbar('You are not authorized to delete this forum');
+      return;
+    }
+
     final confirmed = await showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('HDelete Forum'),
-        content: const Text('Do you want to delete this forum?'),
+        title: const Text('Delete Forum'),
+        content: const Text('Are you sure you want to delete this forum?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -221,11 +349,100 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
 
     if (confirmed == true) {
       try {
-        await _apiService.deleteForum(widget.forumId);
-        Navigator.pop(context, true);
+        final apiService = ForumsApiService();
+        final success = await apiService.deleteForum(
+          request: widget.request,
+          id: widget.forumId,
+        );
+        if (success) {
+          Navigator.pop(context, true);
+          _showSuccessSnackbar('Forum deleted successfully');
+        }
       } catch (e) {
-        _showErrorSnackbar('Failed to delete forums: ${e.toString()}');
+        _showErrorSnackbar('Failed to delete forum: ${e.toString()}');
+        print('Error deleting forum: $e');
       }
+    }
+  }
+
+  Future<void> _toggleHotStatus() async {
+    if (_forum == null) return;
+
+    if (!_isAdmin) {
+      _showErrorSnackbar('Only administrators can toggle hot status');
+      return;
+    }
+
+    try {
+      final apiService = ForumsApiService();
+      final result = await apiService.toggleHotStatus(
+        request: widget.request,
+        forumId: _forum!.id,
+      );
+      setState(() {
+        _forum = Forum.fromJson({
+          ..._forum!.toJson(),
+          'is_hot': result['is_hot'] ?? false,
+        });
+      });
+      _showSuccessSnackbar(
+        _forum!.isHot ? 'Forum marked as HOT' : 'Forum unmarked from HOT',
+      );
+    } catch (e) {
+      _showErrorSnackbar('Failed to change HOT status: ${e.toString()}');
+      print('Error toggling hot status: $e');
+    }
+  }
+
+  Future<void> _editForum() async {
+    if (_forum == null) return;
+
+    if (!_isOwner) {
+      _showErrorSnackbar('Only the forum owner can edit this forum');
+      return;
+    }
+
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ForumFormPage(
+          request: widget.request,
+          forum: _forum,
+          isEdit: true,
+        ),
+      ),
+    );
+
+    if (result == true) {
+      await _loadForumData();
+      _showSuccessSnackbar('Forum updated successfully');
+    }
+  }
+
+  Future<void> _loadMoreReplies() async {
+    if (_forum == null) return;
+
+    setState(() {
+      _isLoadingReplies = true;
+    });
+
+    try {
+      final apiService = ForumsApiService();
+      final newReplies = await apiService.loadMoreReplies(
+        request: widget.request,
+        forumId: _forum!.id,
+        offset: _replies.length,
+      );
+      
+      setState(() {
+        _replies.addAll(newReplies);
+      });
+    } catch (e) {
+      _showErrorSnackbar('Failed to load more replies: ${e.toString()}');
+    } finally {
+      setState(() {
+        _isLoadingReplies = false;
+      });
     }
   }
 
@@ -275,24 +492,26 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
   }
 
   Widget _buildErrorView() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const Icon(Icons.error_outline, color: Colors.red, size: 64),
-        const SizedBox(height: 16),
-        const Text(
-          'Forum not found',
-          style: TextStyle(color: Colors.white, fontSize: 18),
-        ),
-        const SizedBox(height: 8),
-        ElevatedButton(
-          onPressed: () => Navigator.pop(context),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.red[700],
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.error_outline, color: Colors.red, size: 64),
+          const SizedBox(height: 16),
+          const Text(
+            'Forum not found',
+            style: TextStyle(color: Colors.white, fontSize: 18),
           ),
-          child: const Text('Back'),
-        ),
-      ],
+          const SizedBox(height: 8),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red[700],
+            ),
+            child: const Text('Go Back'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -394,8 +613,19 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
                         delegate: SliverChildBuilderDelegate(
                           (context, index) {
                             final reply = _replies[index];
+                            
+                            // Check if current user is the reply owner
+                            final isReplyOwner = _isLoggedIn && 
+                                _currentUsername != null && 
+                                reply.username == _currentUsername;
+                            
                             return ForumsRepliesCard(
-                              reply: reply,
+                              reply: reply.copyWith(
+                                isOwner: isReplyOwner,
+                                isForumOwner: _isOwner,
+                              ),
+                              isAdmin: _isAdmin,
+                              isLoggedIn: _isLoggedIn,
                               onLike: () => _toggleReplyLike(reply.id),
                               onDelete: () => _deleteReply(reply.id),
                             );
@@ -411,7 +641,7 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
                       padding: const EdgeInsets.all(16),
                       child: Center(
                         child: ElevatedButton(
-                          onPressed: _isLoadingReplies ? null : () => _loadReplies(reset: false),
+                          onPressed: _isLoadingReplies ? null : _loadMoreReplies,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.grey[800],
                             foregroundColor: Colors.white,
@@ -422,7 +652,7 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
                                   height: 20,
                                   child: CircularProgressIndicator(strokeWidth: 2),
                                 )
-                              : const Text('Load more'),
+                              : const Text('Load More Replies'),
                         ),
                       ),
                     ),
@@ -435,6 +665,42 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
           _buildReplyInput(),
         ],
       ),
+    );
+  }
+
+  Widget _buildActionButtons() {
+    final canEdit = _isOwner;
+    final canDelete = _isOwner || _isAdmin;
+    final canToggleHot = _isAdmin;
+    
+    if (!canEdit && !canDelete && !canToggleHot) {
+      return const SizedBox();
+    }
+    
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (canEdit)
+          IconButton(
+            icon: const Icon(Icons.edit, color: Colors.white),
+            onPressed: _editForum,
+          ),
+        if (canDelete)
+          IconButton(
+            icon: const Icon(Icons.delete, color: Colors.red),
+            onPressed: _deleteForum,
+          ),
+        if (canToggleHot)
+          IconButton(
+            icon: Icon(
+              _forum!.isHot
+                  ? Icons.local_fire_department
+                  : Icons.local_fire_department_outlined,
+              color: _forum!.isHot ? Colors.orange : Colors.white,
+            ),
+            onPressed: _toggleHotStatus,
+          ),
+      ],
     );
   }
 
@@ -462,7 +728,7 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
                 backgroundColor: Colors.grey[700],
                 radius: 20,
                 child: Text(
-                  _forum!.username![0].toUpperCase(),
+                  _forum!.username?[0].toUpperCase() ?? 'A',
                   style: const TextStyle(color: Colors.white),
                 ),
               ),
@@ -472,7 +738,7 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      _forum!.username!,
+                      _forum!.username ?? 'Anonymous',
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w500,
@@ -550,10 +816,13 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: _toggleLike,
+              onPressed: _isLoggedIn ? _toggleLike : () {
+                _showErrorSnackbar('Please login to like this forum');
+              },
               style: ElevatedButton.styleFrom(
-                backgroundColor:
-                    _forum!.userHasLiked ? Colors.red[800] : Colors.red[700],
+                backgroundColor: _isLoggedIn
+                  ? (_forum!.userHasLiked ? Colors.red[800] : Colors.red[700])
+                  : Colors.grey[700],
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 12),
               ),
@@ -565,68 +834,6 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildActionButtons() {
-    // In real app, check if current user is owner or staff
-    final isOwner = true; // Replace with actual check
-    final isStaff = true; // Replace with actual check
-
-    if (!isOwner && !isStaff) return const SizedBox();
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (isOwner)
-          IconButton(
-            icon: const Icon(Icons.edit, color: Colors.white),
-            onPressed: () async {
-              final result = await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ForumFormPage(
-                    forum: _forum,
-                    isEdit: true,
-                  ),
-                ),
-              );
-              if (result == true) {
-                _loadForumData();
-              }
-            },
-          ),
-        if (isOwner || isStaff)
-          IconButton(
-            icon: const Icon(Icons.delete, color: Colors.red),
-            onPressed: _deleteForum,
-          ),
-        if (isStaff)
-          IconButton(
-            icon: Icon(
-              _forum!.isHot
-                  ? Icons.local_fire_department
-                  : Icons.local_fire_department_outlined,
-              color: _forum!.isHot ? Colors.orange : Colors.white,
-            ),
-            onPressed: () async {
-              try {
-                final result = await _apiService.toggleHotStatus(_forum!.id);
-                setState(() {
-                  _forum = Forum.fromJson({
-                    ..._forum!.toJson(),
-                    'is_hot': result['is_hot'],
-                  });
-                });
-                _showSuccessSnackbar(
-                  result['is_hot'] ? 'Forum marked HOT' : 'HOT unmarked',
-                );
-              } catch (e) {
-                _showErrorSnackbar('Failed to change HOT status');
-              }
-            },
-          ),
-      ],
     );
   }
 
@@ -644,7 +851,7 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
               maxLines: 3,
               minLines: 1,
               decoration: InputDecoration(
-                hintText: 'Write your reply...',
+                hintText: _isLoggedIn ? 'Write your reply...' : 'Login to reply',
                 hintStyle: const TextStyle(color: Colors.grey),
                 filled: true,
                 fillColor: Colors.grey[800],
@@ -656,14 +863,15 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               ),
               style: const TextStyle(color: Colors.white),
+              enabled: _isLoggedIn,
             ),
             const SizedBox(height: 8),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: _isPostingReply ? null : _postReply,
+                onPressed: _isLoggedIn && !_isPostingReply ? _postReply : null,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red[700],
+                  backgroundColor: _isLoggedIn ? Colors.red[700] : Colors.grey[700],
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
@@ -673,7 +881,7 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
                         height: 20,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Text('Post reply'),
+                    : Text(_isLoggedIn ? 'Post Reply' : 'Login to Reply'),
               ),
             ),
           ],

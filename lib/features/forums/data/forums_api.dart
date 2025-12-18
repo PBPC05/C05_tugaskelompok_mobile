@@ -1,217 +1,339 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'package:pittalk_mobile/features/forums/data/forums_model.dart';
 import 'package:pittalk_mobile/features/forums/data/forums_replies_model.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
+import 'package:provider/provider.dart';
+import 'package:pbp_django_auth/pbp_django_auth.dart';
 
 class ForumsApiService {
   static const String baseUrl = "https://ammar-muhammad41-pittalk.pbp.cs.ui.ac.id"; 
 
-  Future<String?> _getToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('token');
-  }
-
-  Future<Map<String, String>> _getHeaders() async {
-    final token = await _getToken();
-    return {
-      'Content-Type': 'application/json',
-      if (token != null) 'Authorization': 'Token $token',
-    };
-  }
-
   // Forum List with pagination, search, and filter
   Future<ForumListResponse> getForums({
+    required CookieRequest request,
     int page = 1,
     String search = '',
     String filter = 'latest',
     int pageSize = 9,
   }) async {
-    final headers = await _getHeaders();
-    final params = {
-      'page': page.toString(),
-      'filter': filter,
-      'page_size': pageSize.toString(),
-      if (search.isNotEmpty) 'q': search,
-    };
+    try {
+      // Build query string manually
+      String query = '?page=$page&filter=$filter&page_size=$pageSize';
+      if (search.isNotEmpty) {
+        query += '&q=${Uri.encodeQueryComponent(search)}';
+      }
 
-    final uri = Uri.parse('$baseUrl/forums/api/json/').replace(queryParameters: params);
-    final response = await http.get(uri, headers: headers);
+      final response = await request.get('$baseUrl/forums/api/json/$query');
 
-    if (response.statusCode == 200) {
-      return ForumListResponse.fromJson(json.decode(response.body));
-    } else {
-      throw Exception('Failed to load forums');
+      if (response != null) {
+        return ForumListResponse.fromJson(response);
+      } else {
+        throw Exception('Failed to load forums');
+      }
+    } catch (e) {
+      throw Exception('Error getting forums: $e');
     }
   }
 
   // Get single forum
-  Future<Forum> getForum(String id) async {
-    final headers = await _getHeaders();
-    final response = await http.get(
-      Uri.parse('$baseUrl/forums/api/$id/'),
-      headers: headers,
-    );
+  Future<Forum> getForum({
+    required CookieRequest request,
+    required String id,
+  }) async {
+    try {
+      final response = await request.get('$baseUrl/forums/api/$id/');
 
-    if (response.statusCode == 200) {
-      return Forum.fromJson(json.decode(response.body));
-    } else {
-      throw Exception('Failed to load forum');
+      if (response != null) {
+        return Forum.fromJson(response);
+      } else {
+        throw Exception('Failed to load forum');
+      }
+    } catch (e) {
+      throw Exception('Error getting forum: $e');
     }
   }
 
-  // Create forum
-  Future<Forum> createForum(String title, String content) async {
-    final headers = await _getHeaders();
-    final response = await http.post(
-      Uri.parse('$baseUrl/forums/create/'),
-      headers: headers,
-      body: json.encode({'title': title, 'content': content}),
-    );
+  // Create forum (Flutter version)
+  Future<Forum> createForum({
+    required CookieRequest request,
+    required String title,
+    required String content,
+  }) async {
+    try {
+      final response = await request.post(
+        '$baseUrl/forums/create-forum-flutter/',
+        {
+          'title': title,
+          'content': content,
+        },
+      );
 
-    if (response.statusCode == 200 || response.statusCode == 201) {
-      return Forum.fromJson(json.decode(response.body));
-    } else {
-      throw Exception('Failed to create forum');
+      if (response != null) {
+        if (response['status'] == 'success') {
+          return Forum.fromJson(response);
+        } else {
+          throw Exception(response['message'] ?? 'Failed to create forum');
+        }
+      } else {
+        throw Exception('Failed to create forum');
+      }
+    } catch (e) {
+      throw Exception('Error creating forum: $e');
     }
   }
 
-  // Update forum
-  Future<Forum> updateForum(String id, String title, String content) async {
-    final headers = await _getHeaders();
-    final response = await http.put(
-      Uri.parse('$baseUrl/forums/$id/edit/'),
-      headers: headers,
-      body: json.encode({'title': title, 'content': content}),
-    );
+  // Update forum (Flutter version)
+  Future<Forum> updateForum({
+    required CookieRequest request,
+    required String id,
+    required String title,
+    required String content,
+  }) async {
+    try {
+      final response = await request.post(
+        '$baseUrl/forums/$id/update-forum-flutter/',
+        {
+          'title': title,
+          'content': content,
+        },
+      );
 
-    if (response.statusCode == 200) {
-      return Forum.fromJson(json.decode(response.body));
-    } else {
-      throw Exception('Failed to update forum');
+      if (response != null) {
+        if (response['status'] == 'success') {
+          return Forum.fromJson(response);
+        } else {
+          throw Exception(response['message'] ?? 'Failed to update forum');
+        }
+      } else {
+        throw Exception('Failed to update forum');
+      }
+    } catch (e) {
+      throw Exception('Error updating forum: $e');
     }
   }
 
-  // Delete forum
-  Future<void> deleteForum(String id) async {
-    final headers = await _getHeaders();
-    final response = await http.delete(
-      Uri.parse('$baseUrl/forums/$id/delete/'),
-      headers: headers,
-    );
+  // Delete forum (Flutter version)
+  Future<bool> deleteForum({
+    required CookieRequest request,
+    required String id,
+  }) async {
+    try {
+      final response = await request.post(
+        '$baseUrl/forums/$id/delete-forum-flutter/',
+        {},
+      );
 
-    if (response.statusCode != 200 && response.statusCode != 204) {
-      throw Exception('Failed to delete forum');
+      if (response != null) {
+        return response['status'] == 'success';
+      } else {
+        throw Exception('Failed to delete forum');
+      }
+    } catch (e) {
+      throw Exception('Error deleting forum: $e');
     }
   }
 
-  // Like/Unlike forum
-  Future<Map<String, dynamic>> toggleForumLike(String id) async {
-    final headers = await _getHeaders();
-    final response = await http.post(
-      Uri.parse('$baseUrl/forums/$id/like/'),
-      headers: headers,
-    );
+  // Like/Unlike forum (Flutter version)
+  Future<Map<String, dynamic>> toggleForumLike({
+    required CookieRequest request,
+    required String id,
+  }) async {
+    try {
+      final response = await request.post(
+        '$baseUrl/forums/$id/like-forum-flutter/',
+        {},
+      );
 
-    if (response.statusCode == 200) {
-      return json.decode(response.body);
-    } else {
-      throw Exception('Failed to toggle like');
+      if (response != null) {
+        if (response['status'] == 'success') {
+          return response;
+        } else {
+          throw Exception(response['message'] ?? 'Failed to toggle like');
+        }
+      } else {
+        throw Exception('Failed to toggle like');
+      }
+    } catch (e) {
+      throw Exception('Error toggling forum like: $e');
     }
   }
 
-  // Create reply
-  Future<ForumReply> createReply(String forumId, String content) async {
-    final headers = await _getHeaders();
-    final response = await http.post(
-      Uri.parse('$baseUrl/forums/$forumId/reply/create/'),
-      headers: headers,
-      body: json.encode({'replies_content': content}),
-    );
+  // Get replies for a forum
+  Future<List<ForumReply>> getForumReplies({
+    required CookieRequest request,
+    required String forumId,
+  }) async {
+    try {
+      final response = await request.get('$baseUrl/forums/api/$forumId/replies/');
 
-    if (response.statusCode == 200) {
-      return ForumReply.fromJson(json.decode(response.body));
-    } else {
-      throw Exception('Failed to create reply');
+      if (response != null) {
+        final List<dynamic> data = response is List ? response : [response];
+        return data.map((item) => ForumReply.fromJson(item)).toList();
+      } else {
+        throw Exception('Failed to load replies');
+      }
+    } catch (e) {
+      throw Exception('Error getting replies: $e');
     }
   }
 
-  // Like/Unlike reply
-  Future<Map<String, dynamic>> toggleReplyLike(int replyId) async {
-    final headers = await _getHeaders();
-    final response = await http.post(
-      Uri.parse('$baseUrl/forums/reply/$replyId/like/'),
-      headers: headers,
-    );
+  // Create reply (Flutter version)
+  Future<ForumReply> createReply({
+    required CookieRequest request,
+    required String forumId,
+    required String content,
+  }) async {
+    try {
+      final response = await request.post(
+        '$baseUrl/forums/$forumId/create-reply-flutter/',
+        {
+          'content': content,
+        },
+      );
 
-    if (response.statusCode == 200) {
-      return json.decode(response.body);
-    } else {
-      throw Exception('Failed to toggle reply like');
+      if (response != null) {
+        if (response['status'] == 'success') {
+          return ForumReply.fromJson(response);
+        } else {
+          throw Exception(response['message'] ?? 'Failed to create reply');
+        }
+      } else {
+        throw Exception('Failed to create reply');
+      }
+    } catch (e) {
+      throw Exception('Error creating reply: $e');
     }
   }
 
-  // Delete reply
-  Future<void> deleteReply(int replyId) async {
-    final headers = await _getHeaders();
-    final response = await http.post(
-      Uri.parse('$baseUrl/forums/reply/$replyId/delete/'),
-      headers: headers,
-    );
+  // Delete reply (Flutter version)
+  Future<bool> deleteReply({
+    required CookieRequest request,
+    required int replyId,
+  }) async {
+    try {
+      final response = await request.post(
+        '$baseUrl/forums/reply/$replyId/delete-flutter/',
+        {},
+      );
 
-    if (response.statusCode != 200) {
-      throw Exception('Failed to delete reply');
+      if (response != null) {
+        return response['status'] == 'success';
+      } else {
+        throw Exception('Failed to delete reply');
+      }
+    } catch (e) {
+      throw Exception('Error deleting reply: $e');
     }
   }
 
-    // Get replies
-  Future<ForumReply> getReplies(String id) async {
-    final headers = await _getHeaders();
-    final response = await http.get(
-      Uri.parse('$baseUrl/forums/api/$id/replies/'),
-      headers: headers,
-    );
+  // Like/Unlike reply (Flutter version)
+  Future<Map<String, dynamic>> toggleReplyLike({
+    required CookieRequest request,
+    required int replyId,
+  }) async {
+    try {
+      final response = await request.post(
+        '$baseUrl/forums/reply/$replyId/like-flutter/',
+        {},
+      );
 
-    if (response.statusCode == 200) {
-      final data = ForumReply.fromJson(json.decode(response.body));
-      return ForumReply.fromJson(json.decode(response.body));
-    } else {
-      throw Exception('Failed to load forum');
+      if (response != null) {
+        if (response['status'] == 'success') {
+          return response;
+        } else {
+          throw Exception(response['message'] ?? 'Failed to toggle reply like');
+        }
+      } else {
+        throw Exception('Failed to toggle reply like');
+      }
+    } catch (e) {
+      throw Exception('Error toggling reply like: $e');
     }
   }
 
-  // Load more replies
-  Future<List<ForumReply>> loadMoreReplies(String forumId, int offset) async {
-    final headers = await _getHeaders();
-    final response = await http.post(
-      Uri.parse('$baseUrl/forums/$forumId/replies/load-more/'),
-      headers: headers,
-      body: json.encode({'offset': offset, 'limit': 5}),
-    );
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      return (data['replies'] as List)
-          .map((item) => ForumReply.fromJson(item))
-          .toList();
-    } else {
-      throw Exception('Failed to load more replies');
+  Future<List<ForumReply>> loadMoreReplies({
+    required CookieRequest request,
+    required String forumId,
+    required int offset,
+  }) async {
+    try {
+      final response = await request.post(
+        '$baseUrl/forums/$forumId/replies/load-more-flutter/',
+        {
+          'offset': offset,
+          'limit': 5,
+        },
+      );
+  
+      if (response != null && response['status'] == 'success') {
+        final List<dynamic> repliesData = response['replies'] ?? [];
+        return repliesData.map((item) => ForumReply.fromJson(item)).toList();
+      } else {
+        throw Exception(response?['message'] ?? 'Failed to load more replies');
+      }
+    } catch (e) {
+      throw Exception('Error loading more replies: $e');
     }
   }
 
-  // Toggle hot status (admin only)
-  Future<Map<String, dynamic>> toggleHotStatus(String forumId) async {
-    final headers = await _getHeaders();
-    final response = await http.post(
-      Uri.parse('$baseUrl/forums/$forumId/hot-toggle/'),
-      headers: headers,
-    );
+  // Toggle hot status (admin only) - Flutter version
+  Future<Map<String, dynamic>> toggleHotStatus({
+    required CookieRequest request,
+    required String forumId,
+  }) async {
+    try {
+      final response = await request.post(
+        '$baseUrl/forums/$forumId/toggle-hot-flutter/',
+        {},
+      );
 
-    if (response.statusCode == 200) {
-      return json.decode(response.body);
-    } else {
-      throw Exception('Failed to toggle hot status');
+      if (response != null) {
+        if (response['status'] == 'success') {
+          return response;
+        } else {
+          throw Exception(response['message'] ?? 'Failed to toggle hot status');
+        }
+      } else {
+        throw Exception('Failed to toggle hot status');
+      }
+    } catch (e) {
+      throw Exception('Error toggling hot status: $e');
     }
   }
+
+  // Check if user is admin
+  Future<Map<String, dynamic>> checkAdmin({
+    required CookieRequest request,
+  }) async {
+    try {
+      final response = await request.get('$baseUrl/forums/api/check-admin/');
+      
+      if (response != null) {
+        return response;
+      } else {
+        throw Exception('Failed to check admin status');
+      }
+    } catch (e) {
+      throw Exception('Error checking admin status: $e');
+    }
+  }
+
+  // Get user profile
+  Future<Map<String, dynamic>> getUserProfile({
+    required CookieRequest request,
+  }) async {
+    try {
+      final response = await request.get('$baseUrl/forums/api/user/profile/');
+      
+      if (response != null) {
+        return response;
+      } else {
+        throw Exception('Failed to get user profile');
+      }
+    } catch (e) {
+      throw Exception('Error getting user profile: $e');
+    }
+  }
+  
 }
+
+
