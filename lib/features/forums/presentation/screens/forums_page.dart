@@ -29,7 +29,6 @@ class _ForumListPageState extends State<ForumListPage> {
   @override
   void initState() {
     super.initState();
-    // Load forums will be triggered when we have access to CookieRequest
   }
 
   @override
