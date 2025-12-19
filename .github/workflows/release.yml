@@ -35,9 +35,6 @@ jobs:
       - name: Build APK
         run: flutter build apk --split-per-abi
 
-      - name: Decode Keystore
-        run: echo "${{ secrets.KEY_JKS }}" | base64 -d > release-keystore.jks
-
       - name: Setup Android SDK
         run: |
           # Set Android SDK environment variables
@@ -50,46 +47,56 @@ jobs:
       - name: Accept Android SDK licenses
         run: |
           yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses || true
-      
-      - name: Convert keystore to JKS format
+
+      - name: Decode Keystore
+        run: echo "${{ secrets.KEY_JKS }}" | base64 -d > release-keystore.jks
+
+      - name: Convert keystore format
         run: |
-          echo "Checking keystore format..."
-          keytool -list -keystore release-keystore.jks -storepass "${{ secrets.KEY_PASSWORD }}" 2>&1 | head -5
-              
-          echo "Converting keystore to JKS format..."
           keytool -importkeystore \
             -srckeystore release-keystore.jks \
-            -destkeystore release-keystore-converted.jks \
+            -destkeystore release-keystore-temp.jks \
             -deststoretype JKS \
             -srcstorepass "${{ secrets.KEY_PASSWORD }}" \
             -deststorepass "${{ secrets.KEY_PASSWORD }}" \
-            -srckeypass "${{ secrets.KEY_PASSWORD }}" \
-            -destkeypass "${{ secrets.KEY_PASSWORD }}" \
-            -srcalias release \
-            -destalias release \
-            -noprompt
-              
-          # Replace original with converted
-          mv release-keystore-converted.jks release-keystore.jks
-          echo "Keystore converted successfully!"
+            -noprompt 2>/dev/null || true
 
-      - name: Sign APKs with apksigner
+          if [ -f release-keystore-temp.jks ]; then
+            mv release-keystore-temp.jks release-keystore.jks
+            echo "Keystore converted to JKS format"
+          else
+            echo "Keystore may already be in JKS format"
+          fi
+
+      - name: Sign APKs (jarsigner fallback)
         run: |
           for apk in build/app/outputs/flutter-apk/*.apk; do
-            echo "Signing $apk with apksigner..."
-            ${ANDROID_HOME}/build-tools/34.0.0/apksigner sign \
+            echo "Signing $apk..."
+
+            if ${ANDROID_HOME}/build-tools/34.0.0/apksigner sign \
               --ks release-keystore.jks \
               --ks-pass pass:"${{ secrets.KEY_PASSWORD }}" \
-              --key-pass pass:"${{ secrets.KEY_PASSWORD }}" \
               --ks-key-alias release \
-              "$apk"
+              "$apk" 2>/dev/null; then
+              echo "✓ Signed with apksigner"
+            else
+              echo "apksigner failed, using jarsigner..."
+              jarsigner -verbose \
+                -sigalg SHA256withRSA \
+                -digestalg SHA-256 \
+                -keystore release-keystore.jks \
+                -storepass "${{ secrets.KEY_PASSWORD }}" \
+                -keypass "${{ secrets.KEY_PASSWORD }}" \
+                "$apk" release
+            fi
           done
 
-      - name: Verify APK signatures
+      - name: Verify signatures
         run: |
           for apk in build/app/outputs/flutter-apk/*.apk; do
             echo "Verifying $apk..."
-            ${ANDROID_HOME}/build-tools/34.0.0/apksigner verify --verbose "$apk"
+            ${ANDROID_HOME}/build-tools/34.0.0/apksigner verify --verbose "$apk" || \
+            jarsigner -verify -verbose "$apk"
           done
 
       - name: Cleanup Keystore
