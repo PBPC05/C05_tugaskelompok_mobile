@@ -60,6 +60,8 @@ class _ForumFormPageState extends State<ForumFormPage> {
           content: _contentController.text.trim(),
         );
         print('Forum updated: ${updatedForum.title}');
+        
+        _showSuccessSnackbar('Discussion updated successfully!');
       } else {
         final newForum = await apiService.createForum(
           request: widget.request,
@@ -67,23 +69,118 @@ class _ForumFormPageState extends State<ForumFormPage> {
           content: _contentController.text.trim(),
         );
         print('Forum created: ${newForum.id}');
+
+        _showSuccessSnackbar('Discussion created successfully!');
       }
+
+      await Future.delayed(const Duration(milliseconds: 1500));
 
       Navigator.pop(context, true);
     } catch (e) {
       setState(() {
         _isSubmitting = false;
       });
+ 
       _showErrorSnackbar('Failed to save forum: ${e.toString()}');
       print('Error: $e');
     }
   }
 
+  void _showSuccessSnackbar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle, color: Colors.white),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: Colors.green[800],
+        duration: const Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        action: SnackBarAction(
+          label: 'Dismiss',
+          textColor: Colors.white,
+          onPressed: () {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          },
+        ),
+      ),
+    );
+  }
+
   void _showErrorSnackbar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
+        content: Row(
+          children: [
+            const Icon(Icons.error_outline, color: Colors.white),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                message.length > 80 ? '${message.substring(0, 80)}...' : message,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: Colors.red[800],
+        duration: const Duration(seconds: 4),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        action: SnackBarAction(
+          label: 'Retry',
+          textColor: Colors.white,
+          onPressed: () {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            _submitForm();
+          },
+        ),
+      ),
+    );
+  }
+
+  void _showInfoSnackbar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.info_outline, color: Colors.white),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: Colors.blue[800],
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
       ),
     );
   }
@@ -97,9 +194,16 @@ class _ForumFormPageState extends State<ForumFormPage> {
         backgroundColor: Colors.grey[900],
         actions: [
           if (_isSubmitting)
-            const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: CircularProgressIndicator(),
+            Container(
+              padding: const EdgeInsets.all(16.0),
+              child: const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              ),
             ),
         ],
       ),
@@ -110,19 +214,30 @@ class _ForumFormPageState extends State<ForumFormPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Title Field
               TextFormField(
                 controller: _titleController,
                 decoration: InputDecoration(
                   labelText: 'Title',
                   labelStyle: const TextStyle(color: Colors.white),
+                  hintText: 'Enter a descriptive title',
+                  hintStyle: TextStyle(color: Colors.grey[500]),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12.0),
+                    borderSide: BorderSide(color: Colors.grey[700]!),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.0),
+                    borderSide: BorderSide(color: Colors.grey[700]!),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.0),
+                    borderSide: BorderSide(color: Colors.red[600]!),
                   ),
                   filled: true,
                   fillColor: Colors.grey[900],
+                  contentPadding: const EdgeInsets.all(16.0),
                 ),
-                style: const TextStyle(color: Colors.white),
+                style: const TextStyle(color: Colors.white, fontSize: 16),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return 'Please enter a title';
@@ -135,21 +250,33 @@ class _ForumFormPageState extends State<ForumFormPage> {
               ),
               const SizedBox(height: 20.0),
 
-              // Content Field
               TextFormField(
                 controller: _contentController,
                 decoration: InputDecoration(
                   labelText: 'Content',
                   labelStyle: const TextStyle(color: Colors.white),
+                  hintText: 'Share your thoughts, questions, or ideas...',
+                  hintStyle: TextStyle(color: Colors.grey[500]),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12.0),
+                    borderSide: BorderSide(color: Colors.grey[700]!),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.0),
+                    borderSide: BorderSide(color: Colors.grey[700]!),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.0),
+                    borderSide: BorderSide(color: Colors.red[600]!),
                   ),
                   filled: true,
                   fillColor: Colors.grey[900],
+                  contentPadding: const EdgeInsets.all(16.0),
                   alignLabelWithHint: true,
                 ),
-                style: const TextStyle(color: Colors.white),
-                maxLines: 10,
+                style: const TextStyle(color: Colors.white, fontSize: 16),
+                maxLines: 15,
+                minLines: 10,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return 'Please enter content';
@@ -162,18 +289,62 @@ class _ForumFormPageState extends State<ForumFormPage> {
               ),
               const SizedBox(height: 30.0),
 
-              // Action Buttons
+              Container(
+                padding: const EdgeInsets.all(12.0),
+                decoration: BoxDecoration(
+                  color: Colors.grey[900],
+                  borderRadius: BorderRadius.circular(8.0),
+                  border: Border.all(color: Colors.grey[700]!),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.lightbulb_outline, color: Colors.yellow[700], size: 20),
+                    const SizedBox(width: 8.0),
+                    Expanded(
+                      child: Text(
+                        widget.isEdit 
+                          ? 'Remember to keep your discussion respectful and on-topic.'
+                          : 'Be respectful, clear, and specific to get the best responses.',
+                        style: TextStyle(
+                          color: Colors.grey[300],
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 30.0),
+
               Row(
                 children: [
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: _isSubmitting ? null : () => Navigator.pop(context),
+                      onPressed: _isSubmitting ? null : () {
+    
+                        _showInfoSnackbar(widget.isEdit ? 'Changes discarded' : 'Creation cancelled');
+                        Navigator.pop(context);
+                      },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.grey[700],
+                        backgroundColor: Colors.grey[800],
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16.0),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10.0),
+                        ),
+                        elevation: 0,
                       ),
-                      child: const Text('Cancel'),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.close, size: 20),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'Cancel',
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12.0),
@@ -184,14 +355,37 @@ class _ForumFormPageState extends State<ForumFormPage> {
                         backgroundColor: Colors.red[600],
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16.0),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10.0),
+                        ),
+                        elevation: 2,
                       ),
                       child: _isSubmitting
                           ? const SizedBox(
                               width: 20,
                               height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
                             )
-                          : Text(widget.isEdit ? 'Update' : 'Create'),
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  widget.isEdit ? Icons.save : Icons.add,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  widget.isEdit ? 'Save Changes' : 'Create Discussion',
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
                     ),
                   ),
                 ],

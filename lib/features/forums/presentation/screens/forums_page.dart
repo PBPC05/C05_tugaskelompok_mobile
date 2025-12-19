@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:pittalk_mobile/features/forums/forum_state_manager.dart';
 import 'package:provider/provider.dart';
 import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:pittalk_mobile/features/forums/data/forums_api.dart';
@@ -17,7 +20,7 @@ class ForumListPage extends StatefulWidget {
 class _ForumListPageState extends State<ForumListPage> {
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-
+  Timer? _debounceTimer;
   String _filter = 'latest';
   String _searchQuery = '';
   int _currentPage = 1;
@@ -25,56 +28,178 @@ class _ForumListPageState extends State<ForumListPage> {
   bool _isLoading = false;
   List<Forum> _forums = [];
   bool _hasError = false;
+  bool _isInitialLoad = true;
+  bool _isLoggedIn = false;
 
   @override
   void initState() {
     super.initState();
+    final stateManager = Provider.of<ForumStateManager>(context, listen: false);
+    stateManager.addListener(_onStateChanged);
+    _checkLoginStatus();
+    Future.delayed(const Duration(milliseconds: 100), () {
+    if (mounted) {
+      _loadForums();
+    }
+  });
+  }
+
+  Future<void> _checkLoginStatus() async {
+    try {
+      final request = Provider.of<CookieRequest>(context, listen: false);
+      final apiService = ForumsApiService();
+      final userData = await apiService.getUserProfile(
+        request: request,
+      );
+      
+      setState(() {
+        _isLoggedIn = userData['is_logged_in'] == true;
+      });
+    } catch (e) {
+      print('Error checking login status: $e');
+      setState(() {
+        _isLoggedIn = false;
+      });
+    }
   }
 
   @override
   void dispose() {
+    final stateManager = Provider.of<ForumStateManager>(context, listen: false);
+    stateManager.removeListener(_onStateChanged);
+    _debounceTimer?.cancel();
     _scrollController.dispose();
     _searchController.dispose();
     super.dispose();
   }
 
-  Future<void> _loadForums({int page = 1, bool reset = true}) async {
-    final request = Provider.of<CookieRequest>(context, listen: false);
-    final apiService = ForumsApiService();
-
-    if (reset) {
-      setState(() {
-        _isLoading = true;
-        _hasError = false;
-        _currentPage = page;
-      });
-    }
-
-    try {
-      final response = await apiService.getForums(
-        request: request,
-        page: page,
-        search: _searchQuery,
-        filter: _filter,
-      );
-
-      setState(() {
-        if (reset) {
-          _forums = response.results;
-        } else {
-          _forums.addAll(response.results);
-        }
-        _totalPages = response.numPages;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _hasError = true;
-      });
-      _showErrorSnackbar('Failed to load forums: ${e.toString()}');
+  void _onStateChanged() {
+    final stateManager = Provider.of<ForumStateManager>(context, listen: false);
+    
+    if (stateManager.needsRefresh) {
+      _refreshForums();
+      stateManager.resetRefreshFlag();
     }
   }
+
+  Future<void> _refreshForums() async {
+  final request = Provider.of<CookieRequest>(context, listen: false);
+  final apiService = ForumsApiService();
+
+  try {
+    final response = await apiService.getForums(
+      request: request,
+      page: _currentPage,
+      search: _searchQuery,
+      filter: _filter,
+    );
+
+    final stateManager = Provider.of<ForumStateManager>(context, listen: false);
+
+    final updatedForums = response.results.map((serverForum) {
+      final cachedForum = stateManager.getCachedForum(serverForum.id);
+      
+      if (cachedForum != null) {
+        return Forum(
+          id: serverForum.id,
+          userId: serverForum.userId,
+          username: serverForum.username,
+          title: serverForum.title,
+          content: serverForum.content,
+          views: serverForum.views, 
+          likes: cachedForum.likes,
+          repliesCount: cachedForum.repliesCount,
+          isHot: cachedForum.isHot,
+          createdAt: serverForum.createdAt,
+          updatedAt: serverForum.updatedAt,
+          userHasLiked: cachedForum.userHasLiked,
+        );
+      }
+
+      return serverForum;
+    }).toList();
+
+    setState(() {
+      _forums = updatedForums;
+      _totalPages = response.numPages;
+    });
+    
+  } catch (e) {
+    print('Error refreshing forums: $e');
+    _showErrorSnackbar('Failed to refresh forums');
+  }
+}
+
+  Future<void> _loadForums({int page = 1, bool reset = true}) async {
+  final request = Provider.of<CookieRequest>(context, listen: false);
+  final apiService = ForumsApiService();
+
+  if (reset) {
+    setState(() { 
+      _isLoading = true;
+      _hasError = false;
+      _currentPage = page;
+    });
+  }
+
+  try {
+    final response = await apiService.getForums(
+      request: request,
+      page: page,
+      search: _searchQuery,
+      filter: _filter,
+    );
+  
+    final stateManager = Provider.of<ForumStateManager>(context, listen: false);
+    
+    List<Forum> mergedForums;
+    
+    if (reset) {
+      mergedForums = response.results.map((serverForum) {
+        final cachedForum = stateManager.getCachedForum(serverForum.id);
+        
+        if (cachedForum != null) {
+          return Forum(
+            id: serverForum.id,
+            userId: serverForum.userId,
+            username: serverForum.username,
+            title: serverForum.title,
+            content: serverForum.content,
+            views: serverForum.views,
+            likes: cachedForum.likes,
+            repliesCount: cachedForum.repliesCount,
+            isHot: cachedForum.isHot,
+            createdAt: serverForum.createdAt,
+            updatedAt: serverForum.updatedAt,
+            userHasLiked: cachedForum.userHasLiked,
+          );
+        }
+        return serverForum;
+      }).toList();
+    } else {
+      mergedForums = response.results;
+    }
+
+    setState(() {
+      if (reset) {
+        _forums = mergedForums;
+      } else {
+        _forums.addAll(mergedForums);
+      }
+      _totalPages = response.numPages;
+      _isLoading = false;
+      _hasError = false;
+    });
+  } catch (e) {
+    setState(() {
+      _isLoading = false;
+      _hasError = true;
+      _forums = [];
+      _totalPages = 1;
+    });
+    _showErrorSnackbar('Failed to load forums: ${e.toString()}');
+  }
+}
 
   List<int?> _generatePageWindow({
     required int currentPage,
@@ -85,7 +210,7 @@ class _ForumListPageState extends State<ForumListPage> {
 
     List<int?> pages = [];
 
-    pages.add(1); // always show first page
+    pages.add(1);
 
     int start = currentPage - (windowSize ~/ 2);
     int end = currentPage + (windowSize ~/ 2);
@@ -127,10 +252,32 @@ class _ForumListPageState extends State<ForumListPage> {
   }
 
   void _onSearch() {
+    final searchText = _searchController.text.trim();
+
+  if (searchText.isEmpty) {
     setState(() {
-      _searchQuery = _searchController.text.trim();
+      _searchQuery = '';
+      _searchController.clear();
     });
     _loadForums();
+    return;
+  }
+  
+  if (searchText == _searchQuery) {
+    return;
+  }
+  
+  setState(() {
+    _searchQuery = searchText;
+    _currentPage = 1;
+  });
+
+  _debounceTimer?.cancel();
+  _debounceTimer = Timer(const Duration(milliseconds: 500), () {
+    if (mounted) {
+      _loadForums();
+    }
+  });
   }
 
   void _onFilterChanged(String? value) {
@@ -172,7 +319,6 @@ class _ForumListPageState extends State<ForumListPage> {
       ),
       child: Column(
         children: [
-          // === PAGE INFO + CHEVRONS ===
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -197,7 +343,6 @@ class _ForumListPageState extends State<ForumListPage> {
 
           const SizedBox(height: 12),
 
-          // === PAGE NUMBERS (MODERN STYLE) ===
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
@@ -285,12 +430,6 @@ class _ForumListPageState extends State<ForumListPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Load forums when widget is first built
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_forums.isEmpty && !_isLoading && !_hasError) {
-        _loadForums();
-      }
-    });
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -298,21 +437,22 @@ class _ForumListPageState extends State<ForumListPage> {
         title: const Text('PitTalk Forums'),
         backgroundColor: Colors.grey[900],
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () => _loadForums(),
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: _loadForums,
+            ),
           ),
         ],
       ),
       body: Column(
         children: [
-          // Search and Filter
           Container(
             color: Colors.grey[900],
             padding: const EdgeInsets.all(12),
             child: Column(
               children: [
-                // Search Bar
                 Row(
                   children: [
                     Expanded(
@@ -331,20 +471,23 @@ class _ForumListPageState extends State<ForumListPage> {
                                   hintText: 'Find discussion...',
                                   hintStyle: TextStyle(color: Colors.grey),
                                   border: InputBorder.none,
-                                  contentPadding: EdgeInsets.only(
-                                    left: 16,
-                                    right: 8,
-                                    bottom: 12,
-                                  ),
                                 ),
                                 style: const TextStyle(color: Colors.white),
                                 onSubmitted: (_) => _onSearch(),
                               ),
                             ),
-                            IconButton(
-                              icon: const Icon(Icons.search, color: Colors.grey),
-                              onPressed: _onSearch,
-                            ),
+                            if (_searchQuery.isNotEmpty)
+              IconButton(
+                icon: Icon(Icons.clear, color: Colors.grey[500], size: 20),
+                onPressed: () {
+                  _searchController.clear();
+                  _onSearch();
+                },
+              ),
+            IconButton(
+              icon: Icon(Icons.search, color: Colors.grey[500]),
+              onPressed: _onSearch,
+            ),
                           ],
                         ),
                       ),
@@ -352,7 +495,6 @@ class _ForumListPageState extends State<ForumListPage> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                // Filter
                 Row(
                   children: [
                     const Text(
@@ -399,12 +541,10 @@ class _ForumListPageState extends State<ForumListPage> {
             ),
           ),
 
-          // Loading/Error/Content
           Expanded(
             child: _buildContent(),
           ),
 
-          // Pagination Controls
           _buildPaginationControls(),
         ],
       ),
@@ -413,20 +553,24 @@ class _ForumListPageState extends State<ForumListPage> {
           return Padding(
             padding: const EdgeInsets.only(bottom: 12, right: 12),
             child: FloatingActionButton(
-              onPressed: () async {
-                final result = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ForumFormPage(request: request),
-                  ),
-                );
-                if (result == true) {
-                  _loadForums();
-                }
-              },
-              backgroundColor: Colors.red[700],
-              child: const Icon(Icons.add, color: Colors.white),
-            ),
+          onPressed: _isLoggedIn ? () async {
+            final result = await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ForumFormPage(request: request),
+              ),
+            );
+            if (result == true) {
+              _loadForums();
+            }
+          } : null,
+          backgroundColor: _isLoggedIn ? Colors.red[700] : Colors.grey[600],
+          child: Icon(
+            Icons.add,
+            color: _isLoggedIn ? Colors.white : Colors.grey[400],
+          ),
+          tooltip: _isLoggedIn ? 'Create new discussion' : 'Login to create discussion',
+        ),
           );
         },
       ),
@@ -435,9 +579,21 @@ class _ForumListPageState extends State<ForumListPage> {
 
   Widget _buildContent() {
     if (_isLoading && _forums.isEmpty) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const CircularProgressIndicator(),
+          const SizedBox(height: 16),
+          Text(
+            _searchQuery.isNotEmpty 
+                ? 'Searching for "$_searchQuery"...' 
+                : 'Loading discussions...',
+            style: const TextStyle(color: Colors.white, fontSize: 16),
+          ),
+        ],
+      ),
+    );
     }
 
     if (_hasError && _forums.isEmpty) {
@@ -465,48 +621,92 @@ class _ForumListPageState extends State<ForumListPage> {
     }
 
     if (_forums.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.forum_outlined, color: Colors.grey, size: 64),
-            const SizedBox(height: 16),
-            const Text(
-              'No discussions yet.',
-              style: TextStyle(color: Colors.grey, fontSize: 18),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Be the first to post a discussion!',
-              style: TextStyle(color: Colors.grey, fontSize: 14),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return ListView.builder(
-      controller: _scrollController,
-      padding: const EdgeInsets.all(8),
-      itemCount: _forums.length,
-      itemBuilder: (context, index) {
-        final forum = _forums[index];
-        return ForumCard(
-          forum: forum,
-          onTap: () {
-            final request = Provider.of<CookieRequest>(context, listen: false);
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => ForumDetailPage(
-                  forumId: forum.id,
-                  request: request,
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            _searchQuery.isNotEmpty ? Icons.search_off : Icons.forum_outlined,
+            color: Colors.grey,
+            size: 64,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            _searchQuery.isNotEmpty
+                ? 'No discussions found for "$_searchQuery"'
+                : 'No discussions yet.',
+            style: const TextStyle(color: Colors.grey, fontSize: 18),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _searchQuery.isNotEmpty
+                ? 'Try a different search term'
+                : 'Be the first to post a discussion!',
+            style: const TextStyle(color: Colors.grey, fontSize: 14),
+            textAlign: TextAlign.center,
+          ),
+          if (_searchQuery.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 16),
+              child: ElevatedButton(
+                onPressed: () {
+                  _searchController.clear();
+                  _onSearch();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red[700],
                 ),
+                child: const Text('Clear Search'),
               ),
-            );
-          },
-        );
+            ),
+        ],
+      ),
+    );
+  }
+
+    
+    return RefreshIndicator(
+      onRefresh: () async {
+        await _refreshForums();
       },
+      color: Colors.red[700],
+      backgroundColor: Colors.black,
+      child: ListView.builder(
+        controller: _scrollController,
+        padding: const EdgeInsets.all(8),
+        itemCount: _forums.length,
+        itemBuilder: (context, index) {
+          final forum = _forums[index];
+          return ForumCard( 
+            forum: forum,
+            onTap: () async {
+              final request = Provider.of<CookieRequest>(context, listen: false);
+              final stateManager = Provider.of<ForumStateManager>(context, listen: false);
+              
+              stateManager.cacheForum(forum);
+
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ForumDetailPage(
+                    forumId: forum.id,
+                    request: request,
+                  ),
+                ),
+              );
+
+              if (result == 'deleted') {
+                _refreshForums();
+              }
+              else if (result == true) {
+                await Future.delayed(const Duration(milliseconds: 300));
+                _refreshForums();
+              }
+            },
+          );
+        },
+      ),
     );
   }
 }

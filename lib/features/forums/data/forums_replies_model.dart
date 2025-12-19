@@ -22,14 +22,12 @@ class ForumReply {
   });
 
   factory ForumReply.fromJson(Map<String, dynamic> json) {
-    // Parse tanggal dari berbagai format
     DateTime parseDateTime(dynamic date) {
       if (date is String) {
         try {
           return DateTime.parse(date);
         } catch (e) {
           try {
-            // Coba format lain
             return DateTime.parse(date.replaceAll('T', ' ').substring(0, 19));
           } catch (e2) {
             return DateTime.now();

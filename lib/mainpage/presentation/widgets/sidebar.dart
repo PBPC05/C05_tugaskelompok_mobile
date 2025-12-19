@@ -25,33 +25,75 @@ class _PitTalkSidebarState extends State<PitTalkSidebar>
   bool infoExpanded = false;
   bool historyExpanded = false;
 
-  bool isAdmin = false;
-  bool adminLoaded = false;
+  bool? _isAdmin;
+  bool _adminLoading = false;
+  late CookieRequest _request;
 
   @override
   void initState() {
     super.initState();
+    _request = context.read<CookieRequest>();
     _loadAdminStatus();
   }
 
   Future<void> _loadAdminStatus() async {
-    final request = context.read<CookieRequest>();
-    final adminService = AdminService(request);
+    if (!_request.loggedIn) {
+      setState(() {
+        _isAdmin = false;
+        _adminLoading = false;
+      });
+      return;
+    }
 
-    final result = await adminService.isAdmin();
-
+    if (_adminLoading) return;
+    
     setState(() {
-      isAdmin = result;
-      adminLoaded = true;
+      _adminLoading = true;
     });
+
+    try {
+      final adminService = AdminService(_request);
+      final result = await adminService.isAdmin().timeout(
+        const Duration(seconds: 3),
+        onTimeout: () {
+          return false;
+        },
+      );
+
+      if (mounted) {
+        setState(() {
+          _isAdmin = result;
+          _adminLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isAdmin = false;
+          _adminLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final newRequest = context.watch<CookieRequest>();
+
+    if (newRequest.loggedIn != _request.loggedIn) {
+      _request = newRequest;
+      _loadAdminStatus();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final request = context.watch<CookieRequest>();
-    final isLoggedIn = request.loggedIn;
-
+    final isLoggedIn = _request.loggedIn;
     final sidebarWidth = 260.0;
+
+    final showAdminDashboard = isLoggedIn && _isAdmin == true;
+    final showHistoryAdminLinks = isLoggedIn && _isAdmin == true;
 
     final content = Material(
       color: const Color.fromARGB(255, 59, 9, 9),
@@ -65,9 +107,13 @@ class _PitTalkSidebarState extends State<PitTalkSidebar>
                 context.go("/");
                 widget.onClose?.call();
               },
-              child: Image.asset(
-                "assets/images/pittalk-logo.png",
-                height: 60,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Image.asset(
+                  "assets/images/pittalk-logo.png",
+                  height: 60,
+                  fit: BoxFit.contain,
+                ),
               ),
             ),
             const SizedBox(height: 20),
@@ -92,7 +138,7 @@ class _PitTalkSidebarState extends State<PitTalkSidebar>
               expanded: historyExpanded,
               onTap: () => setState(() => historyExpanded = !historyExpanded),
               children: [
-                if (isLoggedIn && isAdmin) ...[
+                if (showHistoryAdminLinks) ...[
                   _navChild(context, "Drivers History Admin", "/history/drivers/admin"),
                   _navChild(context, "GP Winners Admin", "/history/winners/admin"),
                 ] else ...[
@@ -103,6 +149,7 @@ class _PitTalkSidebarState extends State<PitTalkSidebar>
             ),
     
             _navTile(context, "Predictions", "/prediction", Icons.timeline),
+            
             if (!isLoggedIn) ...[
               _navTile(context, "Login", "/login", Icons.login),
               _navTile(context, "Register", "/register", Icons.app_registration),
@@ -111,29 +158,47 @@ class _PitTalkSidebarState extends State<PitTalkSidebar>
             if (isLoggedIn)
               _navTile(context, "User Dashboard", "/user_dashboard", Icons.dashboard),
 
-            if (isLoggedIn && isAdmin)
+            if (showAdminDashboard)
               _navTile(context, "Admin Dashboard", "/admin", Icons.admin_panel_settings),
+
+            if (isLoggedIn && _isAdmin == null && _adminLoading)
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: SizedBox(
+                  height: 24,
+                  child: Center(
+                    child: SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white70),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
       ),
     );
 
-
     if (!widget.isMobile) return content;
 
     return Stack(
       children: [
-        GestureDetector(
-          onTap: widget.onClose,
-          child: Container(
-            color: Colors.black54,
+        Positioned.fill(
+          child: GestureDetector(
+            onTap: widget.onClose,
+            child: Container(
+              color: Colors.black54,
+            ),
           ),
         ),
-
-        AnimatedSlide(
-          offset: Offset(0, 0),
-          duration: const Duration(milliseconds: 260),
-          curve: Curves.easeOut,
+        Positioned(
+          left: 0,
+          top: 0,
+          bottom: 0,
           child: content,
         ),
       ],
@@ -142,7 +207,9 @@ class _PitTalkSidebarState extends State<PitTalkSidebar>
 
   Widget _navTile(
       BuildContext context, String title, String route, IconData icon) {
-    final bool active = widget.currentRoute == route;
+    final bool active = widget.currentRoute.startsWith(route) || 
+                       (route == "/" && widget.currentRoute == "/") ||
+                       (route != "/" && widget.currentRoute == route);
     return ListTile(
       leading: Icon(icon, color: active ? Colors.redAccent : Colors.white70),
       title: Text(
@@ -153,7 +220,9 @@ class _PitTalkSidebarState extends State<PitTalkSidebar>
         ),
       ),
       onTap: () {
-        context.push(route);
+        if (widget.currentRoute != route) {
+          context.go(route);
+        }
         widget.onClose?.call();
       },
     );
@@ -195,11 +264,11 @@ class _PitTalkSidebarState extends State<PitTalkSidebar>
         ),
       ),
       onTap: () {
-        context.push(route);
+        if (widget.currentRoute != route) {
+          context.go(route);
+        }
         widget.onClose?.call();
       },
     );
   }
-
-  
 }

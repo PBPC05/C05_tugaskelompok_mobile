@@ -20,6 +20,7 @@ class MainPage extends StatelessWidget {
     final isDesktop = MediaQuery.of(context).size.width >= 900;
 
     final content = Scaffold(
+      backgroundColor: const Color(0xFF0F1115),
       body: Row(
         children: [
           if (isDesktop)
@@ -30,25 +31,23 @@ class MainPage extends StatelessWidget {
 
           Expanded(
             child: Container(
-              color: Colors.grey.shade100,
+              color: const Color(0xFF0F1115),
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+                  children: const [
                     HeroBanner(),
 
-                    const SizedBox(height: 32),
-                    const SectionHeader("Featured News"),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 40),
+                    SectionHeader("Featured News"),
+                    SizedBox(height: 16),
                     _NewsSection(),
 
-                    const SizedBox(height: 32),
-                    const SectionHeader("Latest Forums"),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 40),
+                    SectionHeader("Latest Forums"),
+                    SizedBox(height: 16),
                     _ForumsSection(),
-
-                    const SizedBox(height: 32),
                   ],
                 ),
               ),
@@ -69,13 +68,16 @@ class MainPage extends StatelessWidget {
   }
 }
 
+
 class HeroBanner extends StatelessWidget {
+  const HeroBanner({super.key});
+
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(16),
       child: SizedBox(
-        height: 220,
+        height: 240,
         child: Stack(
           children: [
             Positioned.fill(
@@ -84,21 +86,37 @@ class HeroBanner extends StatelessWidget {
                 fit: BoxFit.cover,
               ),
             ),
-            Container(
-              padding: const EdgeInsets.all(20),
-              alignment: Alignment.bottomLeft,
-              child: const Text(
-                "Welcome to PitTalk",
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                  shadows: [
-                    Shadow(blurRadius: 6, color: Colors.black87),
-                  ],
+
+            // Dark overlay
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black.withOpacity(0.2),
+                      Colors.black.withOpacity(0.7),
+                    ],
+                  ),
                 ),
               ),
-            )
+            ),
+
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Align(
+                alignment: Alignment.bottomLeft,
+                child: Text(
+                  "Welcome to PitTalk",
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 32,
+                      ),
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -106,17 +124,20 @@ class HeroBanner extends StatelessWidget {
   }
 }
 
+
 class _NewsSection extends StatelessWidget {
+  const _NewsSection();
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder(
       future: ApiMainPage.fetchNews(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: Padding(
+          return const Padding(
             padding: EdgeInsets.all(24),
-            child: CircularProgressIndicator(),
-          ));
+            child: Center(child: CircularProgressIndicator()),
+          );
         }
 
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
@@ -126,46 +147,85 @@ class _NewsSection extends StatelessWidget {
           );
         }
 
-        final newsList = snapshot.data!.where((n) => n.isFeatured).take(5);
-        final isDesktop = MediaQuery.of(context).size.width >= 900;
+        final featured = snapshot.data!
+            .where((n) => n.isFeatured)
+            .toList();
 
-        return isDesktop
-            ? Wrap(
-                spacing: 16,
-                runSpacing: 16,
-                children: newsList.map((news) {
-                  return SizedBox(
-                    width: 220,
-                    child: NewsCard(title: news.title, imageUrl: news.thumbnail, date: news.createdAt.toString(), views: news.newsViews),
-                  );
-                }).toList(),
-              )
-            : Column(
-                children: newsList.map((news) {
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: NewsCard(title: news.title, imageUrl: news.thumbnail,date: news.createdAt.toString(), views: news.newsViews,
-                    
-                    ),
-                  );
-                }).toList(),
-              );
+        if (featured.isEmpty) return const SizedBox();
+
+        final mainNews = featured.first;
+        final rest = featured.skip(1).take(4).toList();
+
+        return Column(
+          children: [
+            FeaturedNewsCard(
+              title: mainNews.title,
+              imageUrl: mainNews.thumbnail,
+              date: mainNews.createdAt.toString(),
+              views: mainNews.newsViews,
+            ),
+
+            const SizedBox(height: 24),
+
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final isDesktop = constraints.maxWidth >= 900;
+
+                return isDesktop
+                    ? Row(
+                        children: rest.take(2).map((news) {
+                          return Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.only(right: 16),
+                              child: NewsCard(
+                                title: news.title,
+                                imageUrl: news.thumbnail,
+                                date: news.createdAt.toString(),
+                                views: news.newsViews,
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      )
+                    : Column(
+                        children: rest.map((news) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 16),
+                            child: NewsCard(
+                              title: news.title,
+                              imageUrl: news.thumbnail,
+                              date: news.createdAt.toString(),
+                              views: news.newsViews,
+                            ),
+                          );
+                        }).toList(),
+                      );
+              },
+            ),
+          ],
+        );
       },
     );
   }
 }
 
+
+
 class _ForumsSection extends StatelessWidget {
+  const _ForumsSection();
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder(
       future: ApiMainPage.fetchForums(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: Padding(
-            padding: EdgeInsets.all(24),
-            child: CircularProgressIndicator(),
-          ));
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(24),
+              child: CircularProgressIndicator(),
+            ),
+          );
         }
 
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
@@ -180,7 +240,7 @@ class _ForumsSection extends StatelessWidget {
         return Column(
           children: forums.map((f) {
             return Padding(
-              padding: const EdgeInsets.only(bottom: 14),
+              padding: const EdgeInsets.only(bottom: 12),
               child: ForumsCard(
                 title: f.title,
                 author: f.username ?? 'Anonymous',
@@ -190,11 +250,12 @@ class _ForumsSection extends StatelessWidget {
                 onTap: () {
                   final request = Provider.of<CookieRequest>(context, listen: false);
                   Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ForumDetailPage(forumId: f.id, request: request),
-                  ),
-                );
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          ForumDetailPage(forumId: f.id, request: request),
+                    ),
+                  );
                 },
               ),
             );
@@ -204,3 +265,4 @@ class _ForumsSection extends StatelessWidget {
     );
   }
 }
+

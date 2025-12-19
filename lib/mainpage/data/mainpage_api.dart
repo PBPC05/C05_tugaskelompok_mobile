@@ -8,10 +8,23 @@ class ApiMainPage {
 
   static Future<List<News>> fetchNews() async {
     final resp = await http.get(Uri.parse('$baseUrl/news/json/'));
+
     if (resp.statusCode == 200) {
       final List data = jsonDecode(resp.body);
-      return data.map((e) => News.fromJson(e)).toList();
+
+      final newsList = data.map((e) => News.fromJson(e)).toList();
+
+      newsList.sort((a, b) {
+        if (a.isFeatured != b.isFeatured) {
+          return a.isFeatured ? -1 : 1;
+        }
+
+        return b.createdAt.compareTo(a.createdAt);
+      });
+
+      return newsList;
     }
+
     return [];
   }
 

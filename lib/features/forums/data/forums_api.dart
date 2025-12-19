@@ -7,7 +7,6 @@ import 'package:pbp_django_auth/pbp_django_auth.dart';
 class ForumsApiService {
   static const String baseUrl = "https://ammar-muhammad41-pittalk.pbp.cs.ui.ac.id"; 
 
-  // Forum List with pagination, search, and filter
   Future<ForumListResponse> getForums({
     required CookieRequest request,
     int page = 1,
@@ -16,7 +15,6 @@ class ForumsApiService {
     int pageSize = 9,
   }) async {
     try {
-      // Build query string manually
       String query = '?page=$page&filter=$filter&page_size=$pageSize';
       if (search.isNotEmpty) {
         query += '&q=${Uri.encodeQueryComponent(search)}';
@@ -34,7 +32,6 @@ class ForumsApiService {
     }
   }
 
-  // Get single forum
   Future<Forum> getForum({
     required CookieRequest request,
     required String id,
@@ -52,7 +49,6 @@ class ForumsApiService {
     }
   }
 
-  // Create forum (Flutter version)
   Future<Forum> createForum({
     required CookieRequest request,
     required String title,
@@ -81,7 +77,6 @@ class ForumsApiService {
     }
   }
 
-  // Update forum (Flutter version)
   Future<Forum> updateForum({
     required CookieRequest request,
     required String id,
@@ -111,7 +106,6 @@ class ForumsApiService {
     }
   }
 
-  // Delete forum (Flutter version)
   Future<bool> deleteForum({
     required CookieRequest request,
     required String id,
@@ -132,7 +126,6 @@ class ForumsApiService {
     }
   }
 
-  // Like/Unlike forum (Flutter version)
   Future<Map<String, dynamic>> toggleForumLike({
     required CookieRequest request,
     required String id,
@@ -157,7 +150,6 @@ class ForumsApiService {
     }
   }
 
-  // Get replies for a forum
   Future<List<ForumReply>> getForumReplies({
     required CookieRequest request,
     required String forumId,
@@ -176,7 +168,6 @@ class ForumsApiService {
     }
   }
 
-  // Create reply (Flutter version)
   Future<ForumReply> createReply({
     required CookieRequest request,
     required String forumId,
@@ -204,7 +195,6 @@ class ForumsApiService {
     }
   }
 
-  // Delete reply (Flutter version)
   Future<bool> deleteReply({
     required CookieRequest request,
     required int replyId,
@@ -225,7 +215,6 @@ class ForumsApiService {
     }
   }
 
-  // Like/Unlike reply (Flutter version)
   Future<Map<String, dynamic>> toggleReplyLike({
     required CookieRequest request,
     required int replyId,
@@ -275,7 +264,6 @@ class ForumsApiService {
     }
   }
 
-  // Toggle hot status (admin only) - Flutter version
   Future<Map<String, dynamic>> toggleHotStatus({
     required CookieRequest request,
     required String forumId,
@@ -300,7 +288,6 @@ class ForumsApiService {
     }
   }
 
-  // Check if user is admin
   Future<Map<String, dynamic>> checkAdmin({
     required CookieRequest request,
   }) async {
@@ -317,7 +304,6 @@ class ForumsApiService {
     }
   }
 
-  // Get user profile
   Future<Map<String, dynamic>> getUserProfile({
     required CookieRequest request,
   }) async {
@@ -334,6 +320,24 @@ class ForumsApiService {
     }
   }
   
+  Future<Map<String, dynamic>> trackForumView({
+    required CookieRequest request,
+    required String forumId,
+  }) async {
+    try {
+      final response = await request.post(
+        '$baseUrl/forums/$forumId/track-view/',
+        {},
+      );
+
+      if (response != null && response['status'] == 'success') {
+        return response;
+      } else {
+        throw Exception(response?['message'] ?? 'Failed to track view');
+      }
+    } catch (e) {
+      throw Exception('Error tracking forum view: $e');
+    }
+  }
+
 }
-
-

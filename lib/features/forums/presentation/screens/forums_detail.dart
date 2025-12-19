@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pittalk_mobile/features/forums/forum_state_manager.dart';
 import 'package:provider/provider.dart';
 import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:pittalk_mobile/features/forums/data/forums_api.dart';
@@ -24,6 +25,7 @@ class ForumDetailPage extends StatefulWidget {
 class _ForumDetailPageState extends State<ForumDetailPage> {
   final TextEditingController _replyController = TextEditingController();
   final _replyFocusNode = FocusNode();
+  late ForumStateManager _stateManager;
 
   Forum? _forum;
   List<ForumReply> _replies = [];
@@ -31,8 +33,11 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
   bool _isPostingReply = false;
   bool _isLoadingReplies = false;
   bool _hasError = false;
-  
-  // User states
+
+  bool _originalLikeState = false;
+  int _originalRepliesCount = 0;
+  bool _originalHotStatus = false;
+
   bool _isLoggedIn = false;
   bool _isAdmin = false;
   bool _isOwner = false;
@@ -42,6 +47,7 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
   @override
   void initState() {
     super.initState();
+    _stateManager = Provider.of<ForumStateManager>(context, listen: false);
     _loadForumData();
     _checkUserStatus();
   }
@@ -53,11 +59,25 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
     super.dispose();
   }
 
+  Future<void> _trackView() async {
+    if (!_isLoggedIn) return;
+    
+    try {
+      final apiService = ForumsApiService();
+      await apiService.trackForumView(
+        request: widget.request,
+        forumId: widget.forumId,
+      );
+      print('View tracked for forum ${widget.forumId}');
+    } catch (e) {
+      print('Error tracking view: $e');
+    }
+  }
+
   Future<void> _checkUserStatus() async {
     try {
       final apiService = ForumsApiService();
-      
-      // Get user profile
+
       final userData = await apiService.getUserProfile(
         request: widget.request,
       );
@@ -67,8 +87,7 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
         _currentUsername = userData['username'];
         _currentUserId = userData['id'];
         _isAdmin = (userData['is_staff'] ?? false) || (userData['is_superuser'] ?? false);
-        
-        // Also check admin status via check-admin endpoint for admin features
+
         try {
           final adminData = await apiService.checkAdmin(
             request: widget.request,
@@ -79,8 +98,7 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
         }
         
         setState(() {});
-        
-        // Check ownership after loading forum
+
         if (_forum != null) {
           await _checkOwnership();
         }
@@ -95,12 +113,10 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
     if (_forum == null || !_isLoggedIn) return;
     
     try {
-      // Check by user ID (most reliable)
       if (_currentUserId != null && _forum!.userId != null) {
         _isOwner = _forum!.userId == _currentUserId.toString();
       }
-      
-      // Check by username (fallback)
+
       if (!_isOwner && _currentUsername != null && _forum!.username != null) {
         _isOwner = _forum!.username!.toLowerCase() == _currentUsername!.toLowerCase();
       }
@@ -112,114 +128,165 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
   }
 
   Future<void> _loadForumData() async {
+  setState(() {
+    _isLoading = true;
+    _hasError = false;
+  });
+
+  try {
+    await _trackView();
+    final apiService = ForumsApiService();
+    final forum = await apiService.getForum(
+      request: widget.request,
+      id: widget.forumId,
+    );
+    final replies = await apiService.getForumReplies(
+      request: widget.request,
+      forumId: widget.forumId,
+    );
+
+    final cachedForum = _stateManager.getCachedForum(widget.forumId);
+    
     setState(() {
-      _isLoading = true;
-      _hasError = false;
+      _forum = Forum(
+        id: forum.id,
+        userId: forum.userId,
+        username: forum.username,
+        title: forum.title,
+        content: forum.content,
+        views: forum.views,
+        likes: forum.likes,
+        repliesCount: forum.repliesCount,
+        isHot: forum.isHot,
+        createdAt: forum.createdAt,
+        updatedAt: forum.updatedAt,
+        userHasLiked: cachedForum?.userHasLiked ?? forum.userHasLiked,
+      );
+      _replies = replies;
+      _isLoading = false;
+
+      _originalLikeState = _forum!.userHasLiked;
+      _originalRepliesCount = _forum!.repliesCount;
+      _originalHotStatus = _forum!.isHot;
     });
 
-    try {
-      final apiService = ForumsApiService();
-      final forum = await apiService.getForum(
-        request: widget.request,
-        id: widget.forumId,
-      );
-      final replies = await apiService.getForumReplies(
-        request: widget.request,
-        forumId: widget.forumId,
-      );
-      
-      setState(() {
-        _forum = forum;
-        _replies = replies;
-        _isLoading = false;
-      });
-      
-      // Check ownership if user is already logged in
-      if (_isLoggedIn) {
-        await _checkOwnership();
-      }
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _hasError = true;
-      });
-      _showErrorSnackbar('Failed to load forum: ${e.toString()}');
-      print('Error loading forum: $e');
+    _stateManager.updateForumViewCount(forum!.id, forum!.views);
+    _stateManager.cacheForum(_forum!);
+
+    if (_isLoggedIn) {
+      await _checkOwnership();
     }
+  } catch (e) {
+    setState(() {
+      _isLoading = false;
+      _hasError = true;
+    });
+    _showErrorSnackbar('Failed to load forum: ${e.toString()}');
+    print('Error loading forum: $e');
   }
+}
 
   Future<void> _toggleLike() async {
-    if (_forum == null) return;
-    
-    if (!_isLoggedIn) {
-      _showErrorSnackbar('Please login to like this forum');
-      return;
-    }
-
-    try {
-      final apiService = ForumsApiService();
-      final result = await apiService.toggleForumLike(
-        request: widget.request,
-        id: _forum!.id,
-      );
-      setState(() {
-        _forum = Forum.fromJson({
-          ..._forum!.toJson(),
-          'likes': result['forums_likes'] ?? result['likes'] ?? _forum!.likes,
-          'user_has_liked': result['user_has_liked'] ?? false,
-        });
-      });
-    } catch (e) {
-      _showErrorSnackbar('Failed to like: ${e.toString()}');
-      print('Error toggling like: $e');
-    }
+  if (_forum == null) return;
+  
+  if (!_isLoggedIn) {
+    _showErrorSnackbar('Please login to like this forum');
+    return;
   }
 
-  Future<void> _postReply() async {
-    final content = _replyController.text.trim();
-    if (content.isEmpty) {
-      _showErrorSnackbar('Please enter a reply');
-      return;
-    }
-
-    if (!_isLoggedIn) {
-      _showErrorSnackbar('Please login to post a reply');
-      return;
-    }
-
+  try {
+    final apiService = ForumsApiService();
+    final result = await apiService.toggleForumLike(
+      request: widget.request,
+      id: _forum!.id,
+    );
+    
+    final newLikes = result['forums_likes'] ?? result['likes'] ?? _forum!.likes;
+    final userHasLiked = result['user_has_liked'] ?? false;
+    
     setState(() {
-      _isPostingReply = true;
+      _forum = Forum(
+        id: _forum!.id,
+        userId: _forum!.userId,
+        username: _forum!.username,
+        title: _forum!.title,
+        content: _forum!.content,
+        views: _forum!.views,
+        likes: newLikes,
+        repliesCount: _forum!.repliesCount,
+        isHot: _forum!.isHot,
+        createdAt: _forum!.createdAt,
+        updatedAt: _forum!.updatedAt,
+        userHasLiked: userHasLiked,
+      );
     });
 
-    try {
-      final apiService = ForumsApiService();
-      final newReply = await apiService.createReply(
-        request: widget.request,
-        forumId: widget.forumId,
-        content: content,
-      );
-
-      setState(() {
-        _replies.insert(0, newReply);
-        _replyController.clear();
-        if (_forum != null) {
-          _forum = Forum.fromJson({
-            ..._forum!.toJson(),
-            'repliesCount': _forum!.repliesCount + 1,
-          });
-        }
-      });
-      _replyFocusNode.unfocus();
-      _showSuccessSnackbar('Reply posted successfully');
-    } catch (e) {
-      _showErrorSnackbar('Failed to post reply: ${e.toString()}');
-      print('Error posting reply: $e');
-    } finally {
-      setState(() {
-        _isPostingReply = false;
-      });
-    }
+    _stateManager.updateForumLikes(_forum!.id, newLikes, userHasLiked);
+    
+  } catch (e) {
+    _showErrorSnackbar('Failed to like: ${e.toString()}');
+    print('Error toggling like: $e');
   }
+}
+
+  Future<void> _postReply() async {
+  final content = _replyController.text.trim();
+  if (content.isEmpty) {
+    _showErrorSnackbar('Please enter a reply');
+    return;
+  }
+
+  if (!_isLoggedIn) {
+    _showErrorSnackbar('Please login to post a reply');
+    return;
+  }
+
+  setState(() {
+    _isPostingReply = true;
+  });
+
+  try {
+    final apiService = ForumsApiService();
+    final newReply = await apiService.createReply(
+      request: widget.request,
+      forumId: widget.forumId,
+      content: content,
+    );
+
+    setState(() {
+      _replies.insert(0, newReply);
+      _replyController.clear();
+      if (_forum != null) {
+        _forum = Forum(
+          id: _forum!.id,
+          userId: _forum!.userId,
+          username: _forum!.username,
+          title: _forum!.title,
+          content: _forum!.content,
+          views: _forum!.views,
+          likes: _forum!.likes,
+          repliesCount: _forum!.repliesCount + 1,
+          isHot: _forum!.isHot,
+          createdAt: _forum!.createdAt,
+          updatedAt: _forum!.updatedAt,
+          userHasLiked: _forum!.userHasLiked,
+        );
+      }
+    });
+
+    _stateManager.updateForumRepliesCount(_forum!.id, _forum!.repliesCount);
+    
+    _replyFocusNode.unfocus();
+    _showSuccessSnackbar('Reply posted successfully');
+  } catch (e) {
+    _showErrorSnackbar('Failed to post reply: ${e.toString()}');
+    print('Error posting reply: $e');
+  } finally {
+    setState(() {
+      _isPostingReply = false;
+    });
+  }
+}
 
   Future<void> _toggleReplyLike(int replyId) async {
     if (!_isLoggedIn) {
@@ -236,11 +303,10 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
       setState(() {
         final index = _replies.indexWhere((r) => r.id == replyId);
         if (index != -1) {
-          _replies[index] = ForumReply.fromJson({
-            ..._replies[index].toJson(),
-            'likes': result['likes'] ?? 0,
-            'user_has_liked': result['user_has_liked'] ?? false,
-          });
+            _replies[index] = _replies[index].copyWith(
+          likes: result['likes'] ?? _replies[index].likes,
+          userHasLiked: result['user_has_liked'] ?? false,
+        );
         }
       });
     } catch (e) {
@@ -255,7 +321,6 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
       return;
     }
 
-    // Check if user can delete this reply
     final reply = _replies.firstWhere((r) => r.id == replyId, orElse: () => ForumReply(
       id: 0,
       username: '',
@@ -303,12 +368,23 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
           setState(() {
             _replies.removeWhere((r) => r.id == replyId);
             if (_forum != null) {
-              _forum = Forum.fromJson({
-                ..._forum!.toJson(),
-                'repliesCount': _forum!.repliesCount - 1,
-              });
+              _forum = Forum(
+              id: _forum!.id,
+              userId: _forum!.userId,
+              username: _forum!.username,
+              title: _forum!.title,
+              content: _forum!.content,
+              views: _forum!.views,
+              likes: _forum!.likes,
+              repliesCount: _forum!.repliesCount - 1,
+              isHot: _forum!.isHot,
+              createdAt: _forum!.createdAt,
+              updatedAt: _forum!.updatedAt,
+              userHasLiked: _forum!.userHasLiked,
+            );
             }
           });
+          _stateManager.updateForumRepliesCount(_forum!.id, _forum!.repliesCount);
           _showSuccessSnackbar('Reply deleted successfully');
         }
       } catch (e) {
@@ -319,105 +395,128 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
   }
 
   Future<void> _deleteForum() async {
-    if (!_isLoggedIn) {
-      _showErrorSnackbar('Please login to delete forums');
-      return;
-    }
-
-    if (!_isOwner && !_isAdmin) {
-      _showErrorSnackbar('You are not authorized to delete this forum');
-      return;
-    }
-
-    final confirmed = await showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Forum'),
-        content: const Text('Are you sure you want to delete this forum?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      try {
-        final apiService = ForumsApiService();
-        final success = await apiService.deleteForum(
-          request: widget.request,
-          id: widget.forumId,
-        );
-        if (success) {
-          Navigator.pop(context, true);
-          _showSuccessSnackbar('Forum deleted successfully');
-        }
-      } catch (e) {
-        _showErrorSnackbar('Failed to delete forum: ${e.toString()}');
-        print('Error deleting forum: $e');
-      }
-    }
+  if (!_isLoggedIn) {
+    _showErrorSnackbar('Please login to delete forums');
+    return;
   }
 
-  Future<void> _toggleHotStatus() async {
-    if (_forum == null) return;
+  if (!_isOwner && !_isAdmin) {
+    _showErrorSnackbar('You are not authorized to delete this forum');
+    return;
+  }
 
-    if (!_isAdmin) {
-      _showErrorSnackbar('Only administrators can toggle hot status');
-      return;
-    }
+  final confirmed = await showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Delete Forum'),
+      content: const Text('Are you sure you want to delete this forum?'),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(context, true),
+          child: const Text('Delete', style: TextStyle(color: Colors.red)),
+        ),
+      ],
+    ),
+  );
 
+  if (confirmed == true) {
     try {
       final apiService = ForumsApiService();
-      final result = await apiService.toggleHotStatus(
+      final success = await apiService.deleteForum(
         request: widget.request,
-        forumId: _forum!.id,
+        id: widget.forumId,
       );
-      setState(() {
-        _forum = Forum.fromJson({
-          ..._forum!.toJson(),
-          'is_hot': result['is_hot'] ?? false,
-        });
-      });
-      _showSuccessSnackbar(
-        _forum!.isHot ? 'Forum marked as HOT' : 'Forum unmarked from HOT',
-      );
+      if (success) {
+
+        _stateManager.removeForum(widget.forumId);
+
+        Navigator.pop(context, 'deleted');
+        _showSuccessSnackbar('Forum deleted successfully');
+      }
     } catch (e) {
-      _showErrorSnackbar('Failed to change HOT status: ${e.toString()}');
-      print('Error toggling hot status: $e');
+      _showErrorSnackbar('Failed to delete forum: ${e.toString()}');
+      print('Error deleting forum: $e');
     }
   }
+}
+
+  Future<void> _toggleHotStatus() async {
+  if (_forum == null) return;
+
+  if (!_isAdmin) {
+    _showErrorSnackbar('Only administrators can toggle hot status');
+    return;
+  }
+
+  try {
+    final apiService = ForumsApiService();
+    final result = await apiService.toggleHotStatus(
+      request: widget.request,
+      forumId: _forum!.id,
+    );
+    
+    final isHot = result['is_hot'] ?? !_forum!.isHot;
+    
+    setState(() {
+      _forum = Forum(
+        id: _forum!.id,
+        userId: _forum!.userId,
+        username: _forum!.username,
+        title: _forum!.title,
+        content: _forum!.content,
+        views: _forum!.views,
+        likes: _forum!.likes,
+        repliesCount: _forum!.repliesCount,
+        isHot: isHot,
+        createdAt: _forum!.createdAt,
+        updatedAt: _forum!.updatedAt,
+        userHasLiked: _forum!.userHasLiked,
+      );
+    });
+
+    _stateManager.updateForumHotStatus(_forum!.id, isHot);
+    
+    _showSuccessSnackbar(
+      _forum!.isHot ? 'Forum marked as HOT' : 'Forum unmarked from HOT',
+    );
+  } catch (e) {
+    _showErrorSnackbar('Failed to change HOT status: ${e.toString()}');
+    print('Error toggling hot status: $e');
+  }
+}
 
   Future<void> _editForum() async {
-    if (_forum == null) return;
+  if (_forum == null) return;
 
-    if (!_isOwner) {
-      _showErrorSnackbar('Only the forum owner can edit this forum');
-      return;
-    }
+  if (!_isOwner) {
+    _showErrorSnackbar('Only the forum owner can edit this forum');
+    return;
+  }
 
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ForumFormPage(
-          request: widget.request,
-          forum: _forum,
-          isEdit: true,
-        ),
+  final result = await Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => ForumFormPage(
+        request: widget.request,
+        forum: _forum,
+        isEdit: true,
       ),
-    );
+    ),
+  );
 
-    if (result == true) {
-      await _loadForumData();
-      _showSuccessSnackbar('Forum updated successfully');
+  if (result == true) {
+    await _loadForumData();
+    _showSuccessSnackbar('Forum updated successfully');
+
+    if (_forum != null) {
+      _stateManager.cacheForum(_forum!);
     }
   }
+}
 
   Future<void> _loadMoreReplies() async {
     if (_forum == null) return;
@@ -446,22 +545,72 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
     }
   }
 
-  void _showErrorSnackbar(String message) {
+  void _showSuccessSnackbar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle, color: Colors.white),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: Colors.green[800],
         duration: const Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        action: SnackBarAction(
+          label: 'Dismiss',
+          textColor: Colors.white,
+          onPressed: () {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          },
+        ),
       ),
     );
   }
 
-  void _showSuccessSnackbar(String message) {
+  void _showErrorSnackbar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.green,
-        duration: const Duration(seconds: 2),
+        content: Row(
+          children: [
+            const Icon(Icons.error_outline, color: Colors.white),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                message.length > 80 ? '${message.substring(0, 80)}...' : message,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: Colors.red[800],
+        duration: const Duration(seconds: 4),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        action: SnackBarAction(
+          label: 'Dismiss',
+          textColor: Colors.white,
+          onPressed: () {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          },
+        ),
       ),
     );
   }
@@ -519,7 +668,6 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
     return SafeArea(
       child: Column(
         children: [
-          // App Bar
           Container(
             color: Colors.grey[900],
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -527,7 +675,14 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
               children: [
                 IconButton(
                   icon: const Icon(Icons.arrow_back, color: Colors.white),
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () {
+                    final hasChanges = _forum != null && 
+                        (_forum!.userHasLiked != _originalLikeState ||
+                         _forum!.repliesCount != _originalRepliesCount ||
+                         _forum!.isHot != _originalHotStatus);
+
+                    Navigator.pop(context, hasChanges);
+                  },
                 ),
                 Expanded(
                   child: Text(
@@ -544,16 +699,13 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
             ),
           ),
 
-          // Content
           Expanded(
             child: CustomScrollView(
               slivers: [
-                // Forum Content
                 SliverToBoxAdapter(
                   child: _buildForumHeader(),
                 ),
 
-                // Replies Header
                 SliverToBoxAdapter(
                   child: Container(
                     padding: const EdgeInsets.all(16),
@@ -579,7 +731,6 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
                   ),
                 ),
 
-                // Replies List
                 _replies.isEmpty
                     ? SliverToBoxAdapter(
                         child: Container(
@@ -613,8 +764,7 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
                         delegate: SliverChildBuilderDelegate(
                           (context, index) {
                             final reply = _replies[index];
-                            
-                            // Check if current user is the reply owner
+
                             final isReplyOwner = _isLoggedIn && 
                                 _currentUsername != null && 
                                 reply.username == _currentUsername;
@@ -634,7 +784,6 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
                         ),
                       ),
 
-                // Load More Button
                 if (_forum!.repliesCount > _replies.length)
                   SliverToBoxAdapter(
                     child: Container(
@@ -661,7 +810,6 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
             ),
           ),
 
-          // Reply Input
           _buildReplyInput(),
         ],
       ),
@@ -710,7 +858,6 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Title
           Text(
             _forum!.title,
             style: const TextStyle(
@@ -721,7 +868,6 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
           ),
           const SizedBox(height: 12),
 
-          // Author and Time
           Row(
             children: [
               CircleAvatar(
@@ -781,7 +927,6 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
           ),
           const SizedBox(height: 16),
 
-          // Stats
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
@@ -792,7 +937,6 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
           ),
           const SizedBox(height: 20),
 
-          // Content
           Container(
             padding: const EdgeInsets.symmetric(vertical: 16),
             decoration: BoxDecoration(
@@ -812,7 +956,6 @@ class _ForumDetailPageState extends State<ForumDetailPage> {
           ),
           const SizedBox(height: 16),
 
-          // Like Button
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
