@@ -50,6 +50,28 @@ jobs:
       - name: Accept Android SDK licenses
         run: |
           yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses || true
+      
+      - name: Convert keystore to JKS format
+        run: |
+          echo "Checking keystore format..."
+          keytool -list -keystore release-keystore.jks -storepass "${{ secrets.KEY_PASSWORD }}" 2>&1 | head -5
+              
+          echo "Converting keystore to JKS format..."
+          keytool -importkeystore \
+            -srckeystore release-keystore.jks \
+            -destkeystore release-keystore-converted.jks \
+            -deststoretype JKS \
+            -srcstorepass "${{ secrets.KEY_PASSWORD }}" \
+            -deststorepass "${{ secrets.KEY_PASSWORD }}" \
+            -srckeypass "${{ secrets.KEY_PASSWORD }}" \
+            -destkeypass "${{ secrets.KEY_PASSWORD }}" \
+            -srcalias release \
+            -destalias release \
+            -noprompt
+              
+          # Replace original with converted
+          mv release-keystore-converted.jks release-keystore.jks
+          echo "Keystore converted successfully!"
 
       - name: Sign APKs with apksigner
         run: |
