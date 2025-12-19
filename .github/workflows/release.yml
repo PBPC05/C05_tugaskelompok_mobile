@@ -15,25 +15,23 @@ jobs:
       - name: Checkout the code
         uses: actions/checkout@v4
 
-      - name: Get version from pubspec.yaml
-        id: version
-        run: echo "version=$(grep "version:" pubspec.yaml | cut -c10-)" >> $GITHUB_OUTPUT
-
       - name: Setup Java
         uses: actions/setup-java@v3
         with:
           distribution: "zulu"
           java-version: "17"
-
+        
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: "stable"
-          flutter-version: "3.38.5"
-
+        
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3.0.0
+        
       - name: Get packages
         run: flutter pub get
-
+        
       - name: Build APK
         run: flutter build apk --split-per-abi
 
@@ -48,6 +46,10 @@ jobs:
           # Install required build-tools
           yes | sdkmanager --install "build-tools;34.0.0"
           yes | sdkmanager --install "platforms;android-34"
+
+      - name: Accept Android SDK licenses
+        run: |
+          yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
       - name: Sign APKs with apksigner
         run: |
