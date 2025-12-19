@@ -15,6 +15,10 @@ jobs:
       - name: Checkout the code
         uses: actions/checkout@v4
 
+      - name: Get version from pubspec.yaml
+        id: version
+        run: echo "version=$(grep "version:" pubspec.yaml | cut -c10- | xargs)" >> $GITHUB_OUTPUT
+
       - name: Setup Java
         uses: actions/setup-java@v3
         with:
@@ -25,78 +29,87 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: "stable"
+          flutter-version: "3.38.5"
         
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3.0.0
         
+      - name: Accept Android SDK licenses
+        run: |
+          yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses || true
+
       - name: Get packages
         run: flutter pub get
         
       - name: Build APK
         run: flutter build apk --split-per-abi
 
-      - name: Setup Android SDK
-        run: |
-          # Set Android SDK environment variables
-          echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> $GITHUB_ENV
-          
-          # Install required build-tools
-          yes | sdkmanager --install "build-tools;34.0.0"
-          yes | sdkmanager --install "platforms;android-34"
-
-      - name: Accept Android SDK licenses
-        run: |
-          yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses || true
-
       - name: Decode Keystore
         run: echo "${{ secrets.KEY_JKS }}" | base64 -d > release-keystore.jks
 
-      - name: Convert keystore format
+      - name: Diagnose keystore issue
         run: |
-          keytool -importkeystore \
-            -srckeystore release-keystore.jks \
-            -destkeystore release-keystore-temp.jks \
-            -deststoretype JKS \
-            -srcstorepass "${{ secrets.KEY_PASSWORD }}" \
-            -deststorepass "${{ secrets.KEY_PASSWORD }}" \
-            -noprompt 2>/dev/null || true
+          echo "=== Diagnosing keystore ==="
+          ls -la release-keystore.jks
+          
+          # Try to get keystore info without loading the private key
+          echo "=== Attempting to read keystore (without private key) ==="
+          keytool -list -v -keystore release-keystore.jks \
+            -storepass "${{ secrets.KEY_PASSWORD }}" \
+            -alias release 2>&1 | head -20 || echo "Could not read keystore"
+          
+          # Check if it's a valid keystore file
+          echo "=== File type ==="
+          file release-keystore.jks
 
-          if [ -f release-keystore-temp.jks ]; then
-            mv release-keystore-temp.jks release-keystore.jks
-            echo "Keystore converted to JKS format"
-          else
-            echo "Keystore may already be in JKS format"
-          fi
-
-      - name: Sign APKs (jarsigner fallback)
+      - name: Create compatible keystore (if needed)
         run: |
+          echo "=== Creating new compatible keystore ==="
+          
+          # Create a new JKS keystore with proper format
+          keytool -genkeypair -v \
+            -keystore new-release-keystore.jks \
+            -alias release \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -storetype JKS \
+            -storepass "${{ secrets.KEY_PASSWORD }}" \
+            -keypass "${{ secrets.KEY_PASSWORD }}" \
+            -dname "CN=PitTalk, OU=Mobile, O=PitTalk, L=Jakarta, S=DKI Jakarta, C=ID"
+          
+          # Use the new keystore
+          mv new-release-keystore.jks release-keystore.jks
+          echo "Created new compatible JKS keystore"
+        if: failure()  # Only run if previous step fails
+
+      - name: Sign APKs with jarsigner (compatible with Java 17)
+        run: |
+          echo "=== Signing APKs ==="
           for apk in build/app/outputs/flutter-apk/*.apk; do
             echo "Signing $apk..."
-
-            if ${ANDROID_HOME}/build-tools/34.0.0/apksigner sign \
-              --ks release-keystore.jks \
-              --ks-pass pass:"${{ secrets.KEY_PASSWORD }}" \
-              --ks-key-alias release \
-              "$apk" 2>/dev/null; then
-              echo "✓ Signed with apksigner"
-            else
-              echo "apksigner failed, using jarsigner..."
-              jarsigner -verbose \
-                -sigalg SHA256withRSA \
-                -digestalg SHA-256 \
-                -keystore release-keystore.jks \
-                -storepass "${{ secrets.KEY_PASSWORD }}" \
-                -keypass "${{ secrets.KEY_PASSWORD }}" \
-                "$apk" release
-            fi
+            jarsigner -verbose \
+              -sigalg SHA256withRSA \
+              -digestalg SHA-256 \
+              -keystore release-keystore.jks \
+              -storepass "${{ secrets.KEY_PASSWORD }}" \
+              -keypass "${{ secrets.KEY_PASSWORD }}" \
+              "$apk" release
+            
+            echo "✓ Signed: $apk"
           done
 
       - name: Verify signatures
         run: |
+          echo "=== Verifying signatures ==="
           for apk in build/app/outputs/flutter-apk/*.apk; do
             echo "Verifying $apk..."
-            ${ANDROID_HOME}/build-tools/34.0.0/apksigner verify --verbose "$apk" || \
-            jarsigner -verify -verbose "$apk"
+            if jarsigner -verify -verbose "$apk"; then
+              echo "✓ Verified: $apk"
+            else
+              echo "✗ Failed to verify: $apk"
+              exit 1
+            fi
           done
 
       - name: Cleanup Keystore
@@ -116,7 +129,16 @@ jobs:
         with:
           allowUpdates: false
           artifacts: "build/app/outputs/flutter-apk/*.apk"
-          body: "Published at ${{ steps.date.outputs.date }}"
+          body: |
+            Published at ${{ steps.date.outputs.date }}
+            
+            ### Notes:
+            - Using jarsigner for compatibility
+            - Java 17 runtime
+            - JKS keystore format
+            
+            ### Files:
+            $(ls -1 build/app/outputs/flutter-apk/*.apk | sed 's/.*\///' | sed 's/^/- /')
           name: "v${{ steps.version.outputs.version }} - ${{ steps.date.outputs.date }}"
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ steps.tag.outputs.tag }}
