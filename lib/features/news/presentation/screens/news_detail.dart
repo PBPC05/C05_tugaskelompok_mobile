@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:pittalk_mobile/features/news/data/comment_model.dart';
 import 'package:pittalk_mobile/features/news/data/news_model.dart';
 import 'package:pittalk_mobile/features/news/presentation/widgets/comment_card.dart';
@@ -9,8 +10,13 @@ import 'package:pbp_django_auth/pbp_django_auth.dart';
 
 class NewsDetailPage extends StatefulWidget {
   final News news;
+  final bool userLoggedIn;
 
-  const NewsDetailPage({super.key, required this.news});
+  const NewsDetailPage({
+    super.key,
+    required this.news,
+    this.userLoggedIn = false,
+  });
 
   @override
   State<NewsDetailPage> createState() => _NewsDetailPageState();
@@ -21,11 +27,13 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
   List<Comment> _comments = [];
   bool _loadingComments = true;
   final TextEditingController _controller = TextEditingController();
+  bool _userLoggedIn = false;
 
   @override
   void initState() {
     super.initState();
     _news = widget.news;
+    _userLoggedIn = widget.userLoggedIn;
     _incrementViews();
     _fetchComments();
   }
@@ -34,7 +42,7 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
     final request = context.read<CookieRequest>();
 
     final response = await request.get(
-      "http://localhost:8000/news/json/${_news.id}",
+      "https://ammar-muhammad41-pittalk.pbp.cs.ui.ac.id/news/json/${_news.id}",
     );
 
     setState(() => _news = News.fromJson(response));
@@ -62,7 +70,7 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
     final request = context.read<CookieRequest>();
     try {
       await request.post(
-        "http://localhost:8000/news/${_news.id}/increment-views/",
+        "https://ammar-muhammad41-pittalk.pbp.cs.ui.ac.id/news/${_news.id}/increment-views/",
         {},
       );
 
@@ -77,7 +85,7 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
 
     try {
       final res = await request.get(
-        "http://localhost:8000/news/json/${_news.id}/comments",
+        "https://ammar-muhammad41-pittalk.pbp.cs.ui.ac.id/news/json/${_news.id}/comments",
       );
       setState(() {
         _comments = (res as List)
@@ -103,7 +111,7 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
     }
 
     final response = await request.postJson(
-      "http://localhost:8000/news/${_news.id}/comment-flutter/",
+      "https://ammar-muhammad41-pittalk.pbp.cs.ui.ac.id/news/${_news.id}/comment-flutter/",
       jsonEncode({'content': content}),
     );
 
@@ -309,32 +317,69 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
                     const Divider(height: 24),
 
                     // Post new comment
-                    Padding(
-                      padding: const EdgeInsets.all(8.0),
+                    _userLoggedIn
+                        ? Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Column(
+                              children: [
+                                TextField(
+                                  controller: _controller,
+                                  decoration: const InputDecoration(
+                                    hintText: "Write a comment...",
+                                    border: OutlineInputBorder(),
+                                  ),
+                                  maxLines: 3,
+                                ),
+                                const SizedBox(height: 8),
+
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    minimumSize: const Size.fromHeight(40),
+                                  ),
+                                  onPressed: () {
+                                    _postComment();
+                                  },
+                                  child: const Text("Submit"),
+                                ),
+                              ],
+                            ),
+                          )
+                        : Container(
+                    margin: const EdgeInsets.symmetric(
+                      vertical: 16.0,
+                      horizontal: 12.0,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border.all(color: Colors.black, width: 2.0),
+                      borderRadius: BorderRadius.circular(5.0),
+                    ),
+                    padding: const EdgeInsets.all(8.0),
+                    child: SizedBox(
+                      width: double.infinity,
                       child: Column(
                         children: [
-                          TextField(
-                            controller: _controller,
-                            decoration: const InputDecoration(
-                              hintText: "Write a comment...",
-                              border: OutlineInputBorder(),
-                            ),
-                            maxLines: 3,
+                          const Text(
+                            "Please log in or register to leave a comment.",
+                            style: TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold, color: Colors.black),
+                            textAlign: TextAlign.center,
                           ),
-                          const SizedBox(height: 8),
-
+                          const SizedBox(height: 12.0,),
                           ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              minimumSize: const Size.fromHeight(40),
-                            ),
                             onPressed: () {
-                              _postComment();
+                              context.push("/login");
                             },
-                            child: const Text("Submit"),
+                            child: const Padding(
+                              padding: EdgeInsets.all(8.0),
+                              child: Text(
+                                "Log In",
+                              ),
+                            ),
                           ),
                         ],
                       ),
                     ),
+                  ),
 
                     // Display comments
                     if (_loadingComments)

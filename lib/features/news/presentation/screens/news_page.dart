@@ -16,21 +16,61 @@ class NewsPage extends StatefulWidget {
 
 class _NewsPageState extends State<NewsPage> {
   List<News> listNews = [];
-  late Future<List<News>> futureNews;
+  late Future<List<News>> futureNews = Future.value([]);
   String chosenCategory = "all";
+  bool userLoggedIn = false;
+  bool userIsAdmin = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final request = context.read<CookieRequest>();
+      setState(() {
+        futureNews = fetchNews(request);
+      });
+    });
+  }
+
+  // Check if user is authenticated (and if user is admin)
+  void checkUserLogin() async {
     final request = context.read<CookieRequest>();
-    futureNews = fetchNews(request);
+    try {
+      final request1 = await request.get(
+        "https://ammar-muhammad41-pittalk.pbp.cs.ui.ac.id/prediction/check_user",
+      );
+      var login = request1['is_logged_in'];
+      var admin = false;
+
+      if (login) {
+        final request2 = await request.get(
+          "https://ammar-muhammad41-pittalk.pbp.cs.ui.ac.id/prediction/check_admin",
+        );
+        if (request2['is_admin']) {
+          admin = true;
+        }
+      }
+
+      setState(() {
+        userLoggedIn = login;
+        userIsAdmin = admin;
+      });
+    } on Exception {
+      setState(() {
+        userLoggedIn = false;
+        userIsAdmin = false;
+      });
+    }
   }
 
   Future<List<News>> fetchNews(CookieRequest request) async {
     // Clear news list
     listNews.clear();
 
-    final response = await request.get('http://localhost:8000/news/json/');
+    final response = await request.get(
+      'https://ammar-muhammad41-pittalk.pbp.cs.ui.ac.id/news/json/',
+    );
+    debugPrint("");
 
     // Decode response to json format
     var data = response;
@@ -41,7 +81,7 @@ class _NewsPageState extends State<NewsPage> {
         listNews.add(News.fromJson(d));
       }
     }
-    return listNews.reversed.toList();
+    return listNews.toList();
   }
 
   Future<void> refreshNews() async {
@@ -53,8 +93,6 @@ class _NewsPageState extends State<NewsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final request = context.read<CookieRequest>();
-
     final categoryMap = {
       "All Categories": "all",
       "Formula 1/FIA": "f1",
@@ -106,6 +144,7 @@ class _NewsPageState extends State<NewsPage> {
           ),
 
           // Link to news form
+          if (userIsAdmin)
           ElevatedButton(
             onPressed: () async {
               final updated = await context.push('/news/create-news/');
@@ -152,6 +191,8 @@ class _NewsPageState extends State<NewsPage> {
                             refreshNews();
                           }
                         },
+                        userIsAdmin: userIsAdmin,
+                        userLoggedIn: userLoggedIn,
                       ),
                     );
                   } else {
