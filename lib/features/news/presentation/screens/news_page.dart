@@ -4,7 +4,6 @@ import 'package:pittalk_mobile/features/news/presentation/screens/news_detail.da
 import 'package:pittalk_mobile/features/news/presentation/widgets/news_card.dart';
 import 'package:provider/provider.dart';
 import 'package:pbp_django_auth/pbp_django_auth.dart';
-import 'package:pittalk_mobile/mainpage/presentation/widgets/sidebar.dart';
 import 'package:go_router/go_router.dart';
 
 class NewsPage extends StatefulWidget {
@@ -30,6 +29,7 @@ class _NewsPageState extends State<NewsPage> {
         futureNews = fetchNews(request);
       });
     });
+    checkUserLogin();
   }
 
   // Check if user is authenticated (and if user is admin)
@@ -70,7 +70,6 @@ class _NewsPageState extends State<NewsPage> {
     final response = await request.get(
       'https://ammar-muhammad41-pittalk.pbp.cs.ui.ac.id/news/json/',
     );
-    debugPrint("");
 
     // Decode response to json format
     var data = response;
@@ -182,7 +181,7 @@ class _NewsPageState extends State<NewsPage> {
                             context,
                             MaterialPageRoute(
                               builder: (context) =>
-                                  NewsDetailPage(news: shownNews[index]),
+                                  NewsDetailPage(news: shownNews[index], userLoggedIn: userLoggedIn,),
                             ),
                           );
                         },
