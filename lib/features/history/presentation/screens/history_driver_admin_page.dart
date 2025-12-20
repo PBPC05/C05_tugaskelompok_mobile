@@ -1,27 +1,29 @@
 import 'package:flutter/material.dart';
-import '../../data/models/driver_model.dart';
 import '../../data/history_api.dart';
+import '../../data/models/driver_model.dart';
 
+import '../widgets/driver_carousel.dart';
 import '../widgets/driver_filter.dart';
-import '../widgets/driver_table.dart';
-import '../widgets/driver_edit_modal.dart';
 import '../widgets/driver_add_form.dart';
+import '../widgets/driver_edit_modal.dart';
+import '../widgets/driver_table.dart';
 
-class HistoryDriverAdminPage extends StatefulWidget {
-  const HistoryDriverAdminPage({super.key});
+import 'package:pittalk_mobile/mainpage/presentation/widgets/sidebar.dart';
+import 'package:go_router/go_router.dart';
+
+class DriverAdminPage extends StatefulWidget {
+  const DriverAdminPage({super.key});
 
   @override
-  State<HistoryDriverAdminPage> createState() => _HistoryDriverAdminPageState();
+  State<DriverAdminPage> createState() => _DriverAdminPageState();
 }
 
-class _HistoryDriverAdminPageState extends State<HistoryDriverAdminPage> {
+class _DriverAdminPageState extends State<DriverAdminPage> {
   final HistoryApi api = HistoryApi();
-
   List<Driver> allDrivers = [];
-  List<Driver> displayedDrivers = [];
-  Driver? newestDriver;
-
-  bool isLoading = true;
+  List<Driver> displayed = [];
+  Driver? newest;
+  bool loading = true;
 
   @override
   void initState() {
@@ -29,174 +31,99 @@ class _HistoryDriverAdminPageState extends State<HistoryDriverAdminPage> {
     fetchDrivers();
   }
 
-  // ============================================================
-  // FETCH DRIVERS
-  // ============================================================
   Future<void> fetchDrivers() async {
-    setState(() => isLoading = true);
-
+    setState(() => loading = true);
     try {
       final drivers = await api.fetchDrivers();
 
-      // Driver terbaru = ID terbesar
-      final newest = List<Driver>.from(drivers)
+      final latest = List<Driver>.from(drivers)
         ..sort((a, b) => b.id.compareTo(a.id));
+      newest = latest.isNotEmpty ? latest.first : null;
 
       setState(() {
         allDrivers = drivers;
-        displayedDrivers = drivers;
-        newestDriver = newest.isNotEmpty ? newest.first : null;
-        isLoading = false;
+        displayed = List.from(drivers);
+        loading = false;
       });
     } catch (e) {
-      print("Error fetch drivers: $e");
-      if (!mounted) return;
-      setState(() => isLoading = false);
+      debugPrint("Error fetch drivers admin: $e");
+      if (mounted) setState(() => loading = false);
     }
   }
 
-  // Reset filter
   void resetFilter() {
-    setState(() {
-      displayedDrivers = List.from(allDrivers);
-    });
+    setState(() => displayed = List.from(allDrivers));
   }
 
-  // ============================================================
-  // Build UI
-  // ============================================================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF111111),
-
       appBar: AppBar(
         backgroundColor: Colors.black,
         title: const Text("Driver Admin", style: TextStyle(color: Colors.white)),
       ),
 
-      body: isLoading
+      // drawer: PitTalkSidebar(
+      //   currentRoute: GoRouterState.of(context).uri.toString(),
+      // ),
+
+      body: loading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // === Title ===
                   const Text(
-                    "Driver History Management",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    "Driver Management",
+                    style: TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold),
                   ),
 
                   const SizedBox(height: 20),
 
-                  // === Newest Driver Card ===
-                  if (newestDriver != null) _buildNewestDriverCard(),
+                  if (newest != null)
+                    DriverCarousel(
+                      drivers: [newest!],
+                      showControls: false,  // seperti yg ada di winner admin
+                    ),
+
+                  const SizedBox(height: 16),
+
+                  DriverAddForm(onAdded: fetchDrivers),
 
                   const SizedBox(height: 20),
 
-                  // === Add Driver Form ===
-                  DriverAddForm(onAdded: fetchDrivers),
-
-                  const SizedBox(height: 30),
-
-                  // === Filter ===
                   DriverFilter(
                     allDrivers: allDrivers,
-                    onChanged: (filtered) {
-                      setState(() => displayedDrivers = filtered);
-                    },
+                    onChanged: (list) => setState(() => displayed = list),
                     onReset: resetFilter,
                   ),
 
                   const SizedBox(height: 20),
 
-                  // === Table ===
-                  Center( child: DriverTable(
-                    drivers: displayedDrivers,
-                    isAdmin: true,
-                    onEdit: (driver) {
-                      showDialog(
-                        context: context,
-                        builder: (_) => DriverEditModal(
-                          driver: driver,
-                          onUpdated: fetchDrivers,
-                        ),
-                      );
-                    },
-                    onDelete: (id) async {
-                      await api.deleteDriver(id);
-                      fetchDrivers();
-                    },
-                  ) ),
+                  Center(
+                    child: DriverTable(
+                      drivers: displayed,
+                      isAdmin: true,
+                      onEdit: (d) {
+                        showDialog(
+                          context: context,
+                          builder: (_) => DriverEditModal(
+                            driver: d,
+                            onUpdated: fetchDrivers,
+                          ),
+                        );
+                      },
+                      onDelete: (id) async {
+                        await api.deleteDriver(id);
+                        fetchDrivers();
+                      },
+                    ),
+                  ),
                 ],
               ),
             ),
-    );
-  }
-
-  // ============================================================
-  // NEWEST DRIVER CARD
-  // ============================================================
-  Widget _buildNewestDriverCard() {
-    final d = newestDriver!;
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.black54,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade700),
-      ),
-      child: Row(
-        children: [
-          // FOTO DRIVER
-          Container(
-            width: 120,
-            height: 120,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              color: Colors.grey.shade800,
-              image: d.imageUrl != null && d.imageUrl!.isNotEmpty
-                  ? DecorationImage(
-                      image: NetworkImage(api.proxyImage(d.imageUrl)),
-                      fit: BoxFit.cover,
-                    )
-                  : null,
-            ),
-          ),
-
-          const SizedBox(width: 16),
-
-          // INFO DRIVER
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  d.driverName,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text("Nationality: ${d.nationality}",
-                    style: const TextStyle(color: Colors.white70)),
-                Text("Car: ${d.car}",
-                    style: const TextStyle(color: Colors.white70)),
-                Text("Points: ${d.points}",
-                    style: const TextStyle(color: Colors.redAccent)),
-                Text("Year: ${d.year}",
-                    style: const TextStyle(color: Colors.white70)),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

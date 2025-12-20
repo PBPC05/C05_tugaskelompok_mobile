@@ -5,6 +5,9 @@ import 'package:intl/intl.dart';
 import 'package:pittalk_mobile/features/authentication/data/models/user.dart';
 import 'package:pittalk_mobile/features/authentication/domain/services/admin_service.dart';
 import 'package:pittalk_mobile/features/authentication/presentation/screens/edit_user_screen.dart';
+import 'package:pittalk_mobile/features/information/presentation/screens/manage_driver.dart';
+import 'package:pittalk_mobile/features/information/presentation/screens/manage_team.dart';
+import 'package:pittalk_mobile/features/information/presentation/screens/manage_results.dart';
 
 class ManageUsersScreen extends StatefulWidget {
   const ManageUsersScreen({super.key});
@@ -322,9 +325,10 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                         Icons.directions_car,
                         Colors.green,
                         () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Driver management coming soon'),
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const ManageDriversScreen(),
                             ),
                           );
                         },
@@ -334,9 +338,10 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                         Icons.groups,
                         Colors.purple,
                         () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Team management coming soon'),
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const ManageTeamsScreen(),
                             ),
                           );
                         },
@@ -346,9 +351,10 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                         Icons.emoji_events,
                         Colors.orange,
                         () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Race results management coming soon'),
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const ManageResultsScreen(),
                             ),
                           );
                         },
