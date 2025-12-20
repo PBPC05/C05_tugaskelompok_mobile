@@ -3,7 +3,7 @@
 [![Build Status](https://app.bitrise.io/app/5ccc1374-7338-4440-bebe-8fe2b2e828e5/status.svg?token=Oegv-MqkoekFkt4gShlM2w&branch=master)](https://app.bitrise.io/app/5ccc1374-7338-4440-bebe-8fe2b2e828e5)
 
 ## Download
-Download aplikasi versi terbaru: [Download APK](https://app.bitrise.io/app/5ccc1374-7338-4440-bebe-8fe2b2e828e5/installable-artifacts/d579c4103a9f980b/public-install-page/36c3549120d1807f4d6acaba5c1f2bea)
+Download aplikasi versi terbaru: [Download APK](https://app.bitrise.io/app/5ccc1374-7338-4440-bebe-8fe2b2e828e5/installable-artifacts/99cc460ba33b09a2/public-install-page/35aa31ff769a956be4ee0b74058b2e08)
 
 ---
 
