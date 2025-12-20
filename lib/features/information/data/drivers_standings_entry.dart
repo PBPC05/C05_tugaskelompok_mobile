@@ -46,10 +46,10 @@ class Datum {
     factory Datum.fromJson(Map<String, dynamic> json) => Datum(
         driver: json["driver"],
         team: json["team"],
-        points: json["points"],
-        wins: json["wins"],
-        gpPoints: json["gp_points"],
-        sprintPoints: json["sprint_points"],
+        points: (json["points"] as num).toInt(), 
+        wins: (json["wins"] as num).toInt(),
+        gpPoints: (json["gp_points"] as num).toInt(),
+        sprintPoints: (json["sprint_points"] as num).toInt(),
         url: json["url"],
     );
 
