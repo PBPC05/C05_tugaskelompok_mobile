@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pbp_django_auth/pbp_django_auth.dart';
 import 'package:pittalk_mobile/features/forums/presentation/screens/forums_detail.dart';
+import 'package:pittalk_mobile/features/news/presentation/screens/news_detail.dart';
 import 'package:pittalk_mobile/mainpage/data/mainpage_api.dart';
 import 'package:provider/provider.dart';
 
@@ -163,6 +164,16 @@ class _NewsSection extends StatelessWidget {
               imageUrl: mainNews.thumbnail,
               date: mainNews.createdAt.toString(),
               views: mainNews.newsViews,
+              onTap: () {
+                final request = Provider.of<CookieRequest>(context, listen: false);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        NewsDetailPage(news: mainNews, userLoggedIn: request.loggedIn),
+                  ),
+                );
+              },
             ),
 
             const SizedBox(height: 24),
@@ -182,7 +193,18 @@ class _NewsSection extends StatelessWidget {
                                 imageUrl: news.thumbnail,
                                 date: news.createdAt.toString(),
                                 views: news.newsViews,
+                                onTap: () {
+                                final request = Provider.of<CookieRequest>(context, listen: false);
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        NewsDetailPage(news: news, userLoggedIn: request.loggedIn),
+                                  ),
+                                );
+                              },
                               ),
+                              
                             ),
                           );
                         }).toList(),
@@ -196,6 +218,16 @@ class _NewsSection extends StatelessWidget {
                               imageUrl: news.thumbnail,
                               date: news.createdAt.toString(),
                               views: news.newsViews,
+                              onTap: () {
+                                final request = Provider.of<CookieRequest>(context, listen: false);
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        NewsDetailPage(news: news, userLoggedIn: request.loggedIn),
+                                  ),
+                                );
+                              },
                             ),
                           );
                         }).toList(),
