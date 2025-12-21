@@ -4,9 +4,6 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pittalk_mobile/features/authentication/domain/services/auth_service.dart';
 
-// Remove the main() and LoginApp - these should not be in login.dart
-// The login page should be part of your main app's routing
-
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
