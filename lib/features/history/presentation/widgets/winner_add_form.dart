@@ -18,7 +18,7 @@ class WinnerAddForm extends StatefulWidget {
 class _WinnerAddFormState extends State<WinnerAddForm> {
   final _formKey = GlobalKey<FormState>();
 
-  // === Variabel Input ===
+  // Variabel Input nya
   String _winner = "";
   String _car = "";
   String _grandPrix = "";
@@ -47,7 +47,7 @@ class _WinnerAddFormState extends State<WinnerAddForm> {
                 style: TextStyle(color: Colors.white, fontSize: 18)),
             const SizedBox(height: 16),
 
-            // === WINNER NAME ===
+            // WINNER NAME
             _buildTextField(
               label: "Winner Name",
               validator: (v) =>
@@ -55,7 +55,7 @@ class _WinnerAddFormState extends State<WinnerAddForm> {
               onChanged: (v) => _winner = v!,
             ),
 
-            // === CAR ===
+            // CAR
             _buildTextField(
               label: "Car",
               validator: (v) =>
@@ -63,7 +63,7 @@ class _WinnerAddFormState extends State<WinnerAddForm> {
               onChanged: (v) => _car = v!,
             ),
 
-            // === GRAND PRIX ===
+            // GRAND PRIX
             _buildTextField(
               label: "Grand Prix",
               validator: (v) =>
@@ -71,19 +71,19 @@ class _WinnerAddFormState extends State<WinnerAddForm> {
               onChanged: (v) => _grandPrix = v!,
             ),
 
-// === LAPS ===
-_buildTextField(
-  label: "Laps",
-  number: true,
-  validator: (v) {
-    if (v == null || v.isEmpty) return "Laps required!";
-    if (double.tryParse(v) == null) return "Laps must be a number!";
-    return null;
-  },
-  onChanged: (v) => _laps = double.tryParse(v!),
-),
+            // LAPS
+            _buildTextField(
+              label: "Laps",
+              number: true,
+              validator: (v) {
+                if (v == null || v.isEmpty) return "Laps required!";
+                if (double.tryParse(v) == null) return "Laps must be a number!";
+                return null;
+              },
+              onChanged: (v) => _laps = double.tryParse(v!),
+            ),
 
-            // === TIME ===
+            // TIME
             _buildTextField(
               label: "Time (e.g. 1:25:13.456)",
               validator: (v) =>
@@ -91,7 +91,7 @@ _buildTextField(
               onChanged: (v) => _time = v!,
             ),
 
-            // === DATE ===
+            // DATE
             _buildTextField(
               label: "Date (YYYY-MM-DD)",
               validator: (v) {
@@ -106,7 +106,7 @@ _buildTextField(
               onChanged: (v) => _date = v!,
             ),
 
-            // === IMAGE URL (OPTIONAL) ===
+            // IMAGE URL (OPTIONAL)
             _buildTextField(
               label: "Image URL (optional)",
               validator: (v) {
@@ -122,7 +122,7 @@ _buildTextField(
 
             const SizedBox(height: 12),
 
-            // === BUTTON SAVE ===
+            // BUTTON SAVE
             ElevatedButton(
               onPressed: saving ? null : _saveWinner,
               style: ElevatedButton.styleFrom(
@@ -137,9 +137,8 @@ _buildTextField(
     );
   }
 
-  // ======================================================
-  // BUILDER FORM FIELD AGAR RAPI
-  // ======================================================
+
+  // AKU BUAT BUILDER FORM FIELD GITU BIAR RAPI
   Widget _buildTextField({
     required String label,
     required String? Function(String?) validator,
@@ -166,9 +165,7 @@ _buildTextField(
     );
   }
 
-  // ======================================================
-  // SIMPAN KE API
-  // ======================================================
+  // SIMPAN KE API NYA
   Future<void> _saveWinner() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -192,7 +189,7 @@ _buildTextField(
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Winner added successfully!")),
       );
-      widget.onAdded(); // refresh list
+      widget.onAdded(); // refresh list nya
       _formKey.currentState!.reset();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(

@@ -8,7 +8,6 @@ import 'package:pittalk_mobile/features/authentication/presentation/screens/regi
 import 'package:pittalk_mobile/features/forums/forums.dart';
 import 'package:pittalk_mobile/features/history/presentation/screens/history_driver_admin_page.dart';
 import 'package:pittalk_mobile/features/history/presentation/screens/history_driver_user_page.dart';
-import 'package:pittalk_mobile/features/history/presentation/screens/history_page.dart';
 import 'package:pittalk_mobile/features/news/presentation/screens/news_page.dart';
 import 'package:pittalk_mobile/features/prediction/prediction.dart';
 import 'package:pittalk_mobile/features/prediction/presentation/screens/prediction_vote_form.dart';
@@ -82,27 +81,23 @@ final router = GoRouter(
     ),
 
     GoRoute(
-      path: '/history',
-      builder: (_, __) => const PageWrapper(child: HistoryPage()),
-      routes: [
-        GoRoute(
-          path: 'drivers',
-          builder: (_, __) => const PageWrapper(child: DriverUserPage()),
-        ),
-        GoRoute(
-          path: 'drivers/admin',
-          builder: (_, __) => const PageWrapper(child: DriverAdminPage()),
-        ),
+      path: '/history/drivers',
+      builder: (_, __) => const PageWrapper(child: DriverUserPage()),
+    ),
 
-        GoRoute(
-          path: 'winners',
-          builder: (_, __) => const PageWrapper(child: WinnerUserPage()),
-        ),
-        GoRoute(
-          path: 'winners/admin',
-          builder: (_, __) => const PageWrapper(child: WinnerAdminPage()),
-        ),
-      ],
+    GoRoute(
+      path: '/history/drivers/admin',
+      builder: (_, __) => const PageWrapper(child: DriverAdminPage()),
+    ),
+
+    GoRoute(
+      path: '/history/winners',
+      builder: (_, __) => const PageWrapper(child: WinnerUserPage()),
+    ),
+
+    GoRoute(
+      path: '/history/winners/admin',
+      builder: (_, __) => const PageWrapper(child: WinnerAdminPage()),
     ),
 
     GoRoute(

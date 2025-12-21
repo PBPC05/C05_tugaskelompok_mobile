@@ -61,7 +61,6 @@ class _RegisterPageState extends State<RegisterPage> {
           ),
         );
         
-        // Use GoRouter to navigate to login
         context.go('/login');
       } else {
         ScaffoldMessenger.of(context).showSnackBar(

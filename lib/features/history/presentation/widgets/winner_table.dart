@@ -24,18 +24,17 @@ class WinnerTable extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
       ),
 
-      // ==== SCROLLING HORIZONTAL ====
+      // Pake SingleChildScrollView buat bisa scroll horizontal
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: DataTable(
           headingRowHeight: 50,
           dataRowHeight: 50,
 
-          // ==== SPACING BIAR CENTER ====
+          // Spacing biar center
           columnSpacing: 40,
           horizontalMargin: 24,
 
-          // ==== TULISAN HEADER NAMPILIN CENTER ====
           headingTextStyle: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
