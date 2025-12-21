@@ -4,7 +4,7 @@ import 'package:pittalk_mobile/features/authentication/data/models/user.dart';
 
 class AdminService {
   final CookieRequest request;
-  static const String baseUrl = "http://localhost:8000"; 
+  static const String baseUrl = "https://ammar-muhammad41-pittalk.pbp.cs.ui.ac.id/"; // Change this for production
   
   AdminService(this.request);
 

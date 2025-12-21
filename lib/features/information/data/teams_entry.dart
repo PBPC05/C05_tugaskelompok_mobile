@@ -1,10 +1,10 @@
 import 'dart:convert';
 
-List<TeansEntry> teansEntryFromJson(String str) => List<TeansEntry>.from(json.decode(str).map((x) => TeansEntry.fromJson(x)));
+List<TeamsEntry> teamsEntryFromJson(String str) => List<TeamsEntry>.from(json.decode(str).map((x) => TeamsEntry.fromJson(x)));
 
-String teansEntryToJson(List<TeansEntry> data) => json.encode(List<dynamic>.from(data.map((x) => x.toJson())));
+String teamsEntryToJson(List<TeamsEntry> data) => json.encode(List<dynamic>.from(data.map((x) => x.toJson())));
 
-class TeansEntry {
+class TeamsEntry {
     String name;
     String fullName;
     String base;
@@ -21,7 +21,7 @@ class TeansEntry {
     String teamLogo;
     String url;
 
-    TeansEntry({
+    TeamsEntry({
         required this.name,
         required this.fullName,
         required this.base,
@@ -39,7 +39,7 @@ class TeansEntry {
         required this.url,
     });
 
-    factory TeansEntry.fromJson(Map<String, dynamic> json) => TeansEntry(
+    factory TeamsEntry.fromJson(Map<String, dynamic> json) => TeamsEntry(
         name: json["name"],
         fullName: json["full_name"],
         base: json["base"],

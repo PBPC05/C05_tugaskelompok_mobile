@@ -29,8 +29,6 @@ class Driver {
       car: fields["car"] ?? "",
       points: (fields["points"] as num).toDouble(),
       podiums: fields["podiums"] ?? 0,
-
-      // FIX: supaya tidak passing null ke compareTo
       year: fields["year"] ?? 0,
 
       imageUrl: fields["image_url"],

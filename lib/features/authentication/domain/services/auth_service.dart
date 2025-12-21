@@ -7,12 +7,12 @@ class AuthService {
   final CookieRequest request;
   
   // For local development:
-  // - local server: "http://localhost:8000"
-  // - Android Emulator: "http://10.0.2.2:8000"
-  // - iOS Simulator: "http://127.0.0.1:8000"
-  // - Physical device: computer's IP (e.g., "http://192.168.1.100:8000")
-  // For production: use deployed URL (e.g., "https://pbp.cs.ui.ac.id/ammar.muhammad41/pittalk")
-  static const String baseUrl = "http://localhost:8000"; // Change for production
+  // - local server: use "http://localhost:8000"
+  // - Android Emulator: use "http://10.0.2.2:8000"
+  // - iOS Simulator: use "http://127.0.0.1:8000"
+  // - Physical device: use your computer's IP (e.g., "http://192.168.1.100:8000")
+  // For production: use your deployed URL (e.g., "https://pbp.cs.ui.ac.id/ammar.muhammad41/pittalk")
+  static const String baseUrl = "https://ammar-muhammad41-pittalk.pbp.cs.ui.ac.id/"; // Change for production
   
   AuthService(this.request);
 

@@ -70,7 +70,7 @@ class Result {
     int grid;
     int laps;
     String timeText;
-    int points;
+    double points;
     bool fastestLap;
     Driver driver;
     Team team;
@@ -93,7 +93,7 @@ class Result {
         grid: json["grid"],
         laps: json["laps"],
         timeText: json["time_text"],
-        points: json["points"],
+        points: (json['points'] as num).toDouble(),
         fastestLap: json["fastest_lap"],
         driver: Driver.fromJson(json["driver"]),
         team: Team.fromJson(json["team"]),
@@ -150,12 +150,14 @@ class Driver {
 
 enum Status {
     FINISHED,
-    NC
+    NC,
+    DQ
 }
 
 final statusValues = EnumValues({
     "FINISHED": Status.FINISHED,
-    "NC": Status.NC
+    "NC": Status.NC,
+    "DQ": Status.DQ,
 });
 
 class Team {
