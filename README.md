@@ -84,3 +84,9 @@ Kami menggunakan bantuan package pbp-django-auth yang telah dibuat oleh tim asdo
 
 ## 🌐 Link Figma
 👉[Figma](https://www.figma.com/files/team/1432936860516350017/project/465437465/C05?fuid=1432936857614076377)
+
+
+---
+
+## 📹 Link Video Promosi
+👉[Video](https://youtu.be/_2oTW7nP1-8?si=ab9UJOzfBWj4W0rT)
