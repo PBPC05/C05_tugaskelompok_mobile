@@ -39,7 +39,7 @@ Download aplikasi versi terbaru: [Download APK](https://app.bitrise.io/app/5ccc1
 | **Information** | Informasi lengkap driver & tim F1, Klasemen driver & konstruktor, dan Jadwal balapan F1 2025 | Ahmad Faiq Fawwaz Abdussalam
 | **News** | Menyediakan berita terkini seputar F1, admin dapat membuat news baru serta CRUD lainnya | Arya Putra Parikesit
 | **Prediction (Voting)** | Fitur voting untuk memprediksi pemenang balapan | Arya Putra Parikesit
-| **Profile & Settings** | User dapat mengedit profil (nama, foto, bio, dan lainnya)| Ammar Muhammad Rafif
+| **Profile & Settings** | User dapat mengedit profil (nama, bio, dan lainnya)| Ammar Muhammad Rafif
 | **User Dashboard** | Menampilkan ringkasan aktivitas user seperti thread yang dibuat, voting yang dilakukan, dan statistik profil | Ammar Muhammad Rafif
 
 ---
